@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.thamayanth.SchoolERPDriverApp'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.incomingalertcall"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}

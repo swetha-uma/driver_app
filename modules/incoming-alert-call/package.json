@@ -1,0 +1,10 @@
+{
+  "name": "incoming-alert-call",
+  "version": "1.0.0",
+  "main": "index.js",
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

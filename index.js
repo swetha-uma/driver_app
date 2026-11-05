@@ -1,8 +1,8 @@
 import { registerRootComponent } from 'expo';
 
+// Why: register background alert-call task before the UI mounts (lock-screen wakes)
+import './src/features/alertcall/driverAlertCallTask';
+
 import App from './App';
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
 registerRootComponent(App);

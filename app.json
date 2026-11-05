@@ -1,13 +1,22 @@
 {
   "expo": {
-    "name": "driver_app",
-    "slug": "driver_app",
-    "version": "1.0.0",
+    "name": "Driver App",
+    "slug": "School-ERP-DriverApp",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#0A2A8C",
+      "barStyle": "light-content"
     },
     "android": {
       "adaptiveIcon": {
@@ -15,10 +24,38 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.thamayanth.SchoolERPDriverApp",
+      "googleServicesFile": "./google-services.json",
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.USE_FULL_SCREEN_INTENT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-notifications",
+      "./plugins/withIncomingCall.js",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "./plugins/withCleartextTraffic.js"
+    ],
+    "owner": "swethakarthi",
+    "extra": {
+      "eas": {
+        "projectId": "4c7fab47-cfbb-46b7-975e-96019ded5272"
+      }
     }
   }
 }
