@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AppText from '../../components/common/AppText';
 import { buildHomeGreeting } from '../../mockData/home/homeMockData';
 import { TRIP_STATUS } from '../../mockData/trip/todayTripMock';
+import { syncVehicleGatewayMacFromHome } from '../settings/frontend/storage/syncVehicleGatewayMacFromHome';
 import { loadDriverHome } from '../../services/homeApi';
 import { endTrip as endTripOnServer, markNextStopDone } from '../../services/tripApi';
 import { colors } from '../../theme/colors';
@@ -137,6 +138,13 @@ export default function HomeScreen({
       setDrop(data.drop ?? null);
       // Why: gate copy + GMAC / RSSI threshold come from allocatedVan
       setAllocatedVan(data.allocatedVan ?? null);
+      // Why: copy admin Vehicle GMAC into BLE Settings so Gateway POSTs match the van
+      if (data.allocatedVan?.gatewayMacAddress) {
+        syncVehicleGatewayMacFromHome(data.allocatedVan.gatewayMacAddress, {
+          gpsMinMoveMeters: data.allocatedVan.gpsMinMoveMeters,
+          gpsPublishIntervalMs: data.allocatedVan.gpsPublishIntervalMs,
+        }).catch(() => undefined);
+      }
       // Why: trip cards + other tabs unlock only when capture marked near van
       const unlocked = Boolean(data.nearVan ?? data.allocatedVan?.nearVan);
       setNearVan(unlocked);
@@ -150,9 +158,10 @@ export default function HomeScreen({
         setError(err instanceof Error ? err.message : 'Could not load home');
         setAllocatedVan(null);
         setNearVan(false);
+        // Why: the first load failed, so there is no unlock to keep
+        onNearVanChange?.(false);
       }
-      // Why: failed poll should not leave other tabs unlocked
-      onNearVanChange?.(false);
+      // Why: a later poll can fail while captures still succeed; do not lock Schedule/History for that
     } finally {
       if (!quiet) {
         setLoading(false);
@@ -294,7 +303,19 @@ export default function HomeScreen({
       >
         {/* Why: Profile must stay reachable even out of gateway range */}
         <DriverGreetingCard greeting={greeting} name={name} onOpenProfile={onOpenProfile} />
-        <VanProximityGate allocatedVan={allocatedVan} nearVan={false} />
+        {noTrips ? (
+          <View style={styles.allDoneCard}>
+            <Ionicons name="bus-outline" size={28} color={colors.textSecondary} />
+            <AppText variant="subtitle" style={styles.allDoneTitle}>
+              No trips today
+            </AppText>
+            <AppText variant="body" color={colors.textSecondary}>
+              When a trip is generated for your route, it will show up here.
+            </AppText>
+          </View>
+        ) : (
+          <VanProximityGate allocatedVan={allocatedVan} nearVan={false} />
+        )}
       </ScrollView>
     );
   }
@@ -308,8 +329,10 @@ export default function HomeScreen({
       <DriverGreetingCard greeting={greeting} name={name} onOpenProfile={onOpenProfile} />
       <TodaySummaryStrip summary={liveSummary} />
 
-      {/* Why: thin unlocked banner once capture has unlocked the app */}
-      <VanProximityGate allocatedVan={allocatedVan} nearVan={nearVan} />
+      {/* Why: gateway copy is only for a real trip. No trip today is not a missing GMAC. */}
+      {noTrips ? null : (
+        <VanProximityGate allocatedVan={allocatedVan} nearVan={nearVan} />
+      )}
 
       {/* Why: mark-stop errors stay visible without wiping the whole home screen */}
       {markStopError ? (

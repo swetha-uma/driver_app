@@ -3,6 +3,12 @@
     "name": "Driver App",
     "slug": "School-ERP-DriverApp",
     "version": "1.0.6",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4c7fab47-cfbb-46b7-975e-96019ded5272"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -32,7 +38,19 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.WAKE_LOCK",
-        "android.permission.USE_FULL_SCREEN_INTENT"
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
       ]
     },
     "web": {
@@ -40,6 +58,16 @@
     },
     "plugins": [
       "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Driver App to use your location for van live tracking while you act as the vehicle gateway.",
+          "locationAlwaysPermission": "Allow Driver App to use your location for van live tracking while you act as the vehicle gateway.",
+          "locationWhenInUsePermission": "Allow Driver App to use your location for van live tracking while you act as the vehicle gateway.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
       "./plugins/withIncomingCall.js",
       [
         "expo-build-properties",
@@ -51,11 +79,11 @@
       ],
       "./plugins/withCleartextTraffic.js"
     ],
-    "owner": "swethakarthi",
     "extra": {
       "eas": {
-        "projectId": "4c7fab47-cfbb-46b7-975e-96019ded5272"
+        "projectId": "a788cdf4-5245-4370-a9dd-94e435c58f6a"
       }
-    }
+    },
+    "owner": "swethauma"
   }
 }

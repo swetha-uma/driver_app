@@ -10,7 +10,7 @@ import styles from './VanProximityGate.styles';
  * via POST /api/ble_capture (RSSI within vehicle threshold).
  */
 export default function VanProximityGate({ allocatedVan, nearVan }) {
-  // Why: no van assignment today — nothing for the gateway to match
+  // Why: a trip exists but its vehicle has no gateway MAC. No-trip days never reach this card.
   if (!allocatedVan) {
     return (
       <View style={styles.card}>

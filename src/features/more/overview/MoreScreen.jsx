@@ -9,6 +9,7 @@ import {
   loadDriverProfile,
 } from '../../../services/profileApi';
 import { colors } from '../../../theme/colors';
+import BlePhoneGatewayHubScreen from '../../settings/frontend/screens/BlePhoneGatewayHubScreen';
 import ServerSettingsScreen from '../../settings/ServerSettingsScreen';
 import DriverDetailsScreen from '../driverDetails/DriverDetailsScreen';
 import styles from './MoreScreen.styles';
@@ -16,12 +17,16 @@ import styles from './MoreScreen.styles';
 // Why: menu labels stay local — they are not staff HR fields
 const PROFILE_MENU_ITEMS = [
   { id: 'details', label: 'Driver details', icon: 'person', tone: 'purple' },
+  // Why: open BLE Gateway/Reader settings hub so this phone can replace the external van gateway
+  { id: 'bleGateway', label: 'BLE Gateway', icon: 'bluetooth', tone: 'slate' },
   { id: 'server', label: 'Server', icon: 'settings', tone: 'slate' },
   { id: 'logout', label: 'Log out', icon: 'log-out', tone: 'error' },
 ];
 
 const ICONS = {
   person: 'person',
+  // Why: BLE menu row uses the bluetooth icon from Ionicons
+  bluetooth: 'bluetooth',
   settings: 'settings',
   'log-out': 'log-out',
 };
@@ -197,7 +202,8 @@ export default function MoreScreen({ driverToken, onLogout }) {
       setLogoutVisible(true);
       return;
     }
-    if (itemId === 'details' || itemId === 'server') {
+    // Why: details / server / BLE gateway are nested screens opened from Profile only
+    if (itemId === 'details' || itemId === 'server' || itemId === 'bleGateway') {
       setSelectedMenu(itemId);
     }
   }
@@ -226,6 +232,11 @@ export default function MoreScreen({ driverToken, onLogout }) {
         onSaved={() => onLogout?.()}
       />
     );
+  }
+
+  // Why: BLE hub is settings-only — Home / trip / nearVan flows stay unchanged
+  if (selectedMenu === 'bleGateway') {
+    return <BlePhoneGatewayHubScreen onBack={() => setSelectedMenu(null)} />;
   }
 
   if (loading) {
