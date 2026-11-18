@@ -5,7 +5,7 @@ import { radii, shadows } from '../../../../theme/theme';
  * BLE UI tokens — locked to the main driver app theme.
  * Why: Gateway / Scanner / Settings must feel like Home and Server, not a separate dark BLE app.
  */
-export const bleUiColors = {
+export const bleUiColors = { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   bg: colors.canvas,
   bgElevated: colors.surface,
   bgHeader: colors.surface,

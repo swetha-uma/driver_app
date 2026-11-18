@@ -1,10 +1,10 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { bleUiColors, bleUiRadii, bleUiShadows } from '../theme/bleUiColors';
 
 /** Title row with optional close/action — matches Server settings header pattern. */
-export default function BleScreenHeader({ title, subtitle, actionLabel, onAction }) {
+export default function BleScreenHeader({ title, subtitle, actionLabel, onAction }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>

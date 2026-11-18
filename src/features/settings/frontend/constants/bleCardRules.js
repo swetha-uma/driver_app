@@ -1,5 +1,5 @@
 // Why: Type A cards advertise this 16-bit Heart Rate service UUID (0x180D) as their marker.
-export const BLE_CARD_SERVICE_UUID_16 = '180D';
+export const BLE_CARD_SERVICE_UUID_16 = '180D'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 // Why: Type B cards use this Apple iBeacon proximity UUID as the attendance identity.
 export const BLE_CARD_IBEACON_UUIDS = ['06C02012-10D6-4B76-97D7-E03E68F8EB18'];

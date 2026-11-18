@@ -16,7 +16,7 @@ import {
 } from './blePhoneScannerService';
 
 /** Setup phases for status text while native dialogs run. */
-export const DRIVER_SETUP_STEPS = {
+export const DRIVER_SETUP_STEPS = { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   LOCATION: 'location',
   BLUETOOTH: 'bluetooth',
   BACKGROUND: 'background',

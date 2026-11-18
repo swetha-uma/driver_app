@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,7 +11,7 @@ import { formatTripDateLabel, toIsoDate } from '../../utils/formatTripDate';
 import styles from './TripScheduleScreen.styles';
 import TripStopsSheet from './TripStopsSheet';
 
-const STOP_PREVIEW_COUNT = 3;
+const STOP_PREVIEW_COUNT = 3; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 function statusTone(status) {
   // Why: completed trips get a green badge
@@ -151,6 +151,7 @@ export default function TripScheduleScreen({ driverToken }) {
   // Why: evening Drop card from schedule.drop
   const [drop, setDrop] = useState(null);
   // Why: TripStopsSheet needs the selected card + Morning/Evening label
+  const [plannedTrips, setPlannedTrips] = useState([]);
   const [selected, setSelected] = useState(null);
 
   /** Fetch schedule for today (Phase 1 — no date picker yet). */
@@ -167,12 +168,15 @@ export default function TripScheduleScreen({ driverToken }) {
       // Why: omit date so backend uses school-timezone today
       const data = await loadDriverScheduleDay(driverToken);
       setScheduleDate(data.date || toIsoDate());
-      setPickup(data.pickup ?? null);
-      setDrop(data.drop ?? null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load schedule');
+      const planned = Array.isArray(data.trips) && data.trips.length
+        ? data.trips
+        : [data.pickup, data.drop].filter(Boolean);
       setPickup(null);
       setDrop(null);
+      setPlannedTrips(planned);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load schedule');
+      setPlannedTrips([]);
     } finally {
       setLoading(false);
     }
@@ -184,13 +188,10 @@ export default function TripScheduleScreen({ driverToken }) {
   }, [refreshSchedule]);
 
   // Why: build the visible list only from trips that exist today
-  const trips = [];
-  if (pickup) {
-    trips.push({ trip: pickup, slotLabel: 'Morning' });
-  }
-  if (drop) {
-    trips.push({ trip: drop, slotLabel: 'Evening' });
-  }
+  const trips = plannedTrips.map((trip) => ({
+    trip,
+    slotLabel: trip.tripType === 'Drop' ? 'Drop' : 'Pickup',
+  }));
   const noTrips = !loading && !error && trips.length === 0;
 
   if (loading) {
@@ -261,7 +262,7 @@ export default function TripScheduleScreen({ driverToken }) {
               No trips today
             </AppText>
             <AppText variant="body" color={colors.textSecondary}>
-              When a trip is generated for your route, it will show up here.
+            When a trip is added to your schedule, it will show here with its time.
             </AppText>
           </View>
         ) : null}

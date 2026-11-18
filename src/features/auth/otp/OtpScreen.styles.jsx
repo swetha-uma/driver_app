@@ -1,8 +1,8 @@
-import { StyleSheet } from 'react-native';
+﻿import { StyleSheet } from 'react-native';
 
 import { spacing } from '../../../theme/spacing';
 
-export default StyleSheet.create({
+export default StyleSheet.create({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   hero: {
     paddingBottom: spacing.xl + spacing.xl + spacing.sm,
   },

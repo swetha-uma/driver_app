@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, Pressable, TextInput, View } from 'react-native';
 
 import AppButton from '../../../components/common/AppButton';
@@ -6,7 +6,7 @@ import AppText from '../../../components/common/AppText';
 import { OTP_LENGTH } from '../../../constants/auth';
 import styles from './OtpForm.styles';
 
-const FALLBACK_RESEND_SECONDS = 60;
+const FALLBACK_RESEND_SECONDS = 60; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /** Four code boxes; verifies automatically when complete. Resend wait below. */
 export default function OtpForm({

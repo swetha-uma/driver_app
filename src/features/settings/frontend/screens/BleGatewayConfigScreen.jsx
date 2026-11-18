@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -35,7 +35,7 @@ import {
 /**
  * Gateway settings form — professional driver-theme page from Devices → Settings.
  */
-export default function BleGatewayConfigScreen({ onClose, onSaved }) {
+export default function BleGatewayConfigScreen({ onClose, onSaved }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: hub already applies safe-area padding when this screen is shown full-page.
   const [gatewaySettingsForm, setGatewaySettingsForm] = useState(null);
   const [zoneCardMacText, setZoneCardMacText] = useState('');

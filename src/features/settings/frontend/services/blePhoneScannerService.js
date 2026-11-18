@@ -4,7 +4,7 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import { BleAdvertisementPacketAggregator } from './bleAdvertisementAggregator';
 
 // Why: poll native counters every 2s so the UI can show packet gaps vs JS.
-const BLE_SCAN_STATS_POLL_INTERVAL_MS = 2_000;
+const BLE_SCAN_STATS_POLL_INTERVAL_MS = 2_000; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 // Why: short delay before startScan reduces Android "too many starts" race after stop.
 const BLE_SCAN_PRE_START_DELAY_MS = 300;
 // Why: Location OFF blocks BLE scan results on Android even when BT is on.
@@ -203,7 +203,34 @@ function describeBlePhoneScanThrownError(thrownError) {
     : 'Could not start the Bluetooth scan.';
 }
 
-/** Start the Android foreground service that keeps Gateway scan alive with screen off. */
+/** True when the Android gateway service is still scanning, even if this screen was reopened. */
+export async function isBleGatewayServiceRunning() {
+  const nativeBleScannerModule = getNativeBleScannerModule();
+  if (Platform.OS === 'android' && nativeBleScannerModule?.isBackgroundScanArmed) {
+    try {
+      return Boolean(await nativeBleScannerModule.isBackgroundScanArmed());
+    } catch {
+      return false;
+    }
+  }
+  return isBlePhoneScanRunning && currentBleScanOwnerRole === 'gateway';
+}
+
+/** Save the capture URL so the Android service can post cards while the screen is locked. */
+export async function rememberBleGatewayUploadTarget(gatewaySettings) {
+  const nativeBleScannerModule = getNativeBleScannerModule();
+  if (Platform.OS !== 'android' || !nativeBleScannerModule?.configureBackgroundUpload) return;
+  const base = String(gatewaySettings?.apiBaseUrl || '').replace(/\/+$/, '');
+  const path = gatewaySettings?.capturePath || '/api/ble_capture';
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const gmac = String(gatewaySettings?.gmac || '').trim();
+  if (!base || !gmac) return;
+  await nativeBleScannerModule.configureBackgroundUpload(
+    `${base}${normalizedPath}`,
+    gmac,
+    String(gatewaySettings.gatewayId || 'PHONE_LOCAL'),
+  );
+}
 async function startBlePhoneBackgroundScanService(nativeBleScannerModule) {
   try {
     // Why: foreground notification prevents OEM kill while the driver walks with screen off.
@@ -454,10 +481,15 @@ export async function startBlePhoneScan(scanCallbacks, scanOwnerRole = 'gateway'
     await waitBleScanMilliseconds(BLE_SCAN_PRE_START_DELAY_MS);
     if (thisScanSessionId !== bleScanSessionGenerationId) return;
 
+    // Why: the service must own the scan before startScan, so the phone does not open a second scanner.
+    const backgroundScanStatusNote =
+      scanOwnerRole === 'gateway' ? await startBlePhoneBackgroundScanService(nativeBleScannerModule) : '';
+    if (thisScanSessionId !== bleScanSessionGenerationId) return;
+
     // Why: startScan returns the active scan profile label for the status line.
     currentBleScanStatsSnapshot = {
       ...currentBleScanStatsSnapshot,
-      profile: await nativeBleScannerModule.startScan(),
+    profile: await nativeBleScannerModule.startScan(scanOwnerRole === 'gateway'),
     };
     if (thisScanSessionId !== bleScanSessionGenerationId) {
       // Why: stop native scan if the session was cancelled mid-start.
@@ -472,8 +504,6 @@ export async function startBlePhoneScan(scanCallbacks, scanOwnerRole = 'gateway'
   }
 
   // Why: only Gateway needs screen-off keep-alive; Reader is a foreground debug tool.
-  const backgroundScanStatusNote =
-    scanOwnerRole === 'gateway' ? await startBlePhoneBackgroundScanService(nativeBleScannerModule) : '';
   if (thisScanSessionId !== bleScanSessionGenerationId) return;
 
   startBlePhoneScanStatsPolling(nativeBleScannerModule, thisScanSessionId);

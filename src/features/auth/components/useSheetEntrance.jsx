@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 
 /** Slides the white login card up when the phone or code screen opens. */
-export default function useSheetEntrance() {
+export default function useSheetEntrance() { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const sheetOpacity = useRef(new Animated.Value(0)).current;
   const sheetY = useRef(new Animated.Value(42)).current;
 

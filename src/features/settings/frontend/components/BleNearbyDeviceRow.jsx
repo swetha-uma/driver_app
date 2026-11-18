@@ -1,11 +1,11 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+﻿import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { bleUiColors, bleUiRadii, bleUiShadows } from '../theme/bleUiColors';
 import { formatNearbyDeviceLastSeenLabel } from '../utils/bleNearbyDeviceDisplay';
 
 /** Expandable Scanner list row for one nearby BLE advertiser. */
-export default function BleNearbyDeviceRow({ device, expanded, now, onToggle }) {
+export default function BleNearbyDeviceRow({ device, expanded, now, onToggle }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const lastSeenLabel = formatNearbyDeviceLastSeenLabel(device.lastSeenAt, now);
 
   return (

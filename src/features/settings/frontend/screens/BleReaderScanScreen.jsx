@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,7 +19,7 @@ import {
 import { bleUiColors, bleUiRadii, bleUiShadows } from '../theme/bleUiColors';
 import { mapScannedBeaconToNearbyDeviceRow } from '../utils/bleNearbyDeviceDisplay';
 
-const BLE_READER_LIST_REFRESH_INTERVAL_MS = 500;
+const BLE_READER_LIST_REFRESH_INTERVAL_MS = 500; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 const BLE_READER_LIST_MODE_OPTIONS = [
   { id: 'all', label: 'BLE devices' },

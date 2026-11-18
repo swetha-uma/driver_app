@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,7 +9,7 @@ import { colors } from '../../theme/colors';
 import { formatTripDateLabel } from '../../utils/formatTripDate';
 import styles from './TripHistoryScreen.styles';
 
-function statusTone(status) {
+function statusTone(status) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: completed history rows get a green badge
   if (status === 'Completed') {
     return { bg: colors.successBg, text: colors.successText, icon: 'checkmark-circle' };

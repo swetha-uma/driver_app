@@ -1,7 +1,7 @@
 import { getBleCardTypeLabel } from './bleCardClassifier';
 
 // Why: smooth interval display so Reader rows do not jitter every packet.
-const INTERVAL_SMOOTHING_WEIGHT = 0.3;
+const INTERVAL_SMOOTHING_WEIGHT = 0.3; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /** Build the title shown on a Reader list row. */
 function buildNearbyDeviceDisplayName(scannedBeacon) {

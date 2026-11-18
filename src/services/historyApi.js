@@ -5,7 +5,7 @@ import { DRIVER_TOKEN_HEADER } from './loginApi';
  * Load completed trips for the rolling 7-day History window.
  * @param {string} token X-Driver-Token from verify-otp
  */
-export async function loadDriverCompletedTripHistory(token) {
+export async function loadDriverCompletedTripHistory(token) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: history is private — backend resolves school/employee from Redis
   const response = await fetch(`${getApiBase()}/api/v1/driver-app/history`, {
     method: 'GET',

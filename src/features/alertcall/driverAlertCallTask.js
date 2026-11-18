@@ -6,7 +6,7 @@ import {
 } from '../../constants/alertCall';
 
 /** Background task name. Must be registered before the app paints. */
-export const DRIVER_ALERT_CALL_TASK = 'DRIVER_ALERT_CALL_TASK';
+export const DRIVER_ALERT_CALL_TASK = 'DRIVER_ALERT_CALL_TASK'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /**
  * Read still-on-van fields from whichever shape Expo gives a background push.

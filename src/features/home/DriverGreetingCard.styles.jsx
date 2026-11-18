@@ -1,10 +1,10 @@
-import { StyleSheet } from 'react-native';
+﻿import { StyleSheet } from 'react-native';
 
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { radii, shadows } from '../../theme/theme';
 
-export default StyleSheet.create({
+export default StyleSheet.create({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   shadow: {
     borderRadius: radii.lg,
     ...shadows.hero,
@@ -35,7 +35,7 @@ export default StyleSheet.create({
   greeting: {
     color: colors.white,
   },
-  nameRow: {
+  staffCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -45,6 +45,12 @@ export default StyleSheet.create({
     borderColor: colors.heroBadgeBorder,
     borderRadius: radii.md,
     padding: spacing.sm,
+  },
+  namePress: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   nameRowPressed: {
     opacity: 0.92,

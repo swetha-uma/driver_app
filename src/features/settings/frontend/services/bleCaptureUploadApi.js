@@ -6,7 +6,7 @@ import {
 import { normalizeBleApiBaseUrl } from '../utils/bleApiUrlHelpers';
 
 // Why: help drivers fix LAN / cleartext / firewall issues when fetch fails.
-const NETWORK_FAILURE_HINT =
+const NETWORK_FAILURE_HINT = // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   'Check: phone on the same Wi-Fi as the server, address starts with http://, server firewall allows port 8080. ' +
   'If Chrome on this phone opens the same address but this app cannot, rebuild the driver APK.';
 

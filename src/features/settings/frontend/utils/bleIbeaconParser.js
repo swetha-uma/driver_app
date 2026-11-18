@@ -1,5 +1,5 @@
 /** Format 16 UUID bytes into dashed uppercase proximity UUID text. */
-function formatIbeaconUuidBytes(uuidBytes) {
+function formatIbeaconUuidBytes(uuidBytes) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: join to hex then insert dashes so ERP mapping rows match.
   const hexText = [...uuidBytes].map((oneByte) => oneByte.toString(16).padStart(2, '0')).join('');
   return (

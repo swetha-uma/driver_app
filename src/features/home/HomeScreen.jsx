@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,7 +16,7 @@ import VanProximityGate from './VanProximityGate';
 import styles from './HomeScreen.styles';
 
 /** How often Home re-checks nearVan from the school server. */
-const HOME_POLL_MS = 3000;
+const HOME_POLL_MS = 3000; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 function nowTimeLabel() {
   // Why: local start/end stamps until Phase 2 APIs exist
@@ -24,35 +24,29 @@ function nowTimeLabel() {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-/** Build summary chips only for trips that actually exist today. */
+/** Build summary chips for today's pickup/drop (scheduled or live). */
 function buildSummaryFromCards(pickup, drop) {
   // Why: empty day should not invent fake chips
   if (!pickup && !drop) {
-    return { headline: 'No trips scheduled today', chips: [] };
+    return { headline: 'No trip scheduled today', chips: [] };
   }
   const chips = [];
-  // Why: one chip per direction that exists
   if (pickup) {
     chips.push({ id: 'pickup', label: `Pickup · ${pickup.status}`, status: pickup.status });
   }
   if (drop) {
     chips.push({ id: 'drop', label: `Drop · ${drop.status}`, status: drop.status });
   }
-  let headline = `Today: ${pickup ? 1 : 0} Pickup · ${drop ? 1 : 0} Drop`;
-  // Why: live status should beat the generic count headline
   if (pickup?.status === TRIP_STATUS.IN_PROGRESS) {
-    headline = 'Pickup in progress';
-  } else if (drop?.status === TRIP_STATUS.IN_PROGRESS) {
-    headline = 'Drop in progress';
-  } else if (
-    pickup?.status === TRIP_STATUS.COMPLETED
-    && drop?.status === TRIP_STATUS.COMPLETED
-  ) {
-    headline = 'All trips completed today';
-  } else if (pickup?.status === TRIP_STATUS.COMPLETED && drop) {
-    headline = 'Pickup done · Drop waiting';
+    return { headline: 'Pickup is live', chips };
   }
-  return { headline, chips };
+  if (drop?.status === TRIP_STATUS.IN_PROGRESS) {
+    return { headline: 'Drop is live', chips };
+  }
+  if (pickup?.status === TRIP_STATUS.SCHEDULED || drop?.status === TRIP_STATUS.SCHEDULED) {
+    return { headline: 'Today\'s trips', chips };
+  }
+  return { headline: 'Today\'s trips', chips };
 }
 
 /** Local-only start until Phase 2 start API exists. */
@@ -79,14 +73,15 @@ function endTripLocal(trip) {
 }
 
 /**
- * Driver home: polls nearVan and reports it to MainNavigator so other tabs stay locked
- * until the van gateway hears this driver's BLE card.
+ * Driver home: always shows today's pickup/drop schedule.
+ * nearVan is informational only — it no longer hides trip cards.
  */
 export default function HomeScreen({
   driverToken,
   driverName,
   onOpenProfile,
-  onNearVanChange,
+  canLeave,
+  onSwitchToLeave,
 }) {
   // Why: block the scroll content until the first home JSON arrives
   const [loading, setLoading] = useState(true);
@@ -98,7 +93,7 @@ export default function HomeScreen({
   const [drop, setDrop] = useState(null);
   // Why: van identity + proximityStatus from home.allocatedVan
   const [allocatedVan, setAllocatedVan] = useState(null);
-  // Why: unlock flag from home.nearVan (Redis sighting after capture)
+  // Why: optional proximity banner (does not gate trip cards)
   const [nearVan, setNearVan] = useState(false);
   // Why: greeting prefers the employee name from the server
   const [resolvedName, setResolvedName] = useState(driverName || 'Driver');
@@ -120,8 +115,6 @@ export default function HomeScreen({
       // Why: without a token we cannot call the private home API
       setError('Sign in again to load today\'s trips');
       setLoading(false);
-      // Why: navigator must keep tabs locked when session is missing
-      onNearVanChange?.(false);
       return;
     }
     if (!quiet) {
@@ -136,7 +129,7 @@ export default function HomeScreen({
       }
       setPickup(data.pickup ?? null);
       setDrop(data.drop ?? null);
-      // Why: gate copy + GMAC / RSSI threshold come from allocatedVan
+      // Why: proximity banner + GMAC / RSSI threshold come from allocatedVan
       setAllocatedVan(data.allocatedVan ?? null);
       // Why: copy admin Vehicle GMAC into BLE Settings so Gateway POSTs match the van
       if (data.allocatedVan?.gatewayMacAddress) {
@@ -145,11 +138,7 @@ export default function HomeScreen({
           gpsPublishIntervalMs: data.allocatedVan.gpsPublishIntervalMs,
         }).catch(() => undefined);
       }
-      // Why: trip cards + other tabs unlock only when capture marked near van
-      const unlocked = Boolean(data.nearVan ?? data.allocatedVan?.nearVan);
-      setNearVan(unlocked);
-      // Why: MainNavigator disables Schedule/History/Profile from this flag
-      onNearVanChange?.(unlocked);
+      setNearVan(Boolean(data.nearVan ?? data.allocatedVan?.nearVan));
       if (!quiet) {
         setError('');
       }
@@ -158,24 +147,21 @@ export default function HomeScreen({
         setError(err instanceof Error ? err.message : 'Could not load home');
         setAllocatedVan(null);
         setNearVan(false);
-        // Why: the first load failed, so there is no unlock to keep
-        onNearVanChange?.(false);
       }
-      // Why: a later poll can fail while captures still succeed; do not lock Schedule/History for that
     } finally {
       if (!quiet) {
         setLoading(false);
       }
     }
-  }, [driverToken, onNearVanChange]);
+  }, [driverToken]);
 
   useEffect(() => {
-    // Why: first paint loads trips + proximity
+    // Why: first paint loads today's trips
     refreshHome({ quiet: false });
   }, [refreshHome]);
 
   useEffect(() => {
-    // Why: van gateway posts continuously — poll until nearVan flips (and keep refreshing TTL)
+    // Why: keep trip status + optional nearVan banner fresh while Home is open
     if (!driverToken) {
       return undefined;
     }
@@ -185,13 +171,8 @@ export default function HomeScreen({
     return () => clearInterval(timer);
   }, [driverToken, refreshHome]);
 
-  const pickupDone = pickup?.status === TRIP_STATUS.COMPLETED;
-  const dropDone = drop?.status === TRIP_STATUS.COMPLETED;
-  const allDone = Boolean(pickup && drop && pickupDone && dropDone);
-  const noTrips = !loading && !error && !pickup && !drop;
-  // Why: trips stay hidden until the van gateway reports this driver's card
-  const showTripCards = nearVan && !noTrips;
-
+  // Why: Drop stays locked until Pickup is finished
+  const pickupDone = !pickup || pickup.status === TRIP_STATUS.COMPLETED;
   // Why: rebuild chips from current cards so local start/end still updates the strip
   const liveSummary = buildSummaryFromCards(pickup, drop);
 
@@ -293,113 +274,65 @@ export default function HomeScreen({
     );
   }
 
-  // Why: while locked, Home only shows the gate + Profile shortcut (no trip cards)
-  if (!nearVan) {
-    return (
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Why: Profile must stay reachable even out of gateway range */}
-        <DriverGreetingCard greeting={greeting} name={name} onOpenProfile={onOpenProfile} />
-        {noTrips ? (
-          <View style={styles.allDoneCard}>
-            <Ionicons name="bus-outline" size={28} color={colors.textSecondary} />
-            <AppText variant="subtitle" style={styles.allDoneTitle}>
-              No trips today
-            </AppText>
-            <AppText variant="body" color={colors.textSecondary}>
-              When a trip is generated for your route, it will show up here.
-            </AppText>
-          </View>
-        ) : (
-          <VanProximityGate allocatedVan={allocatedVan} nearVan={false} />
-        )}
-      </ScrollView>
-    );
-  }
-
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <DriverGreetingCard greeting={greeting} name={name} onOpenProfile={onOpenProfile} />
+      <DriverGreetingCard
+        greeting={greeting}
+        name={name}
+        onOpenProfile={onOpenProfile}
+        canLeave={canLeave}
+        onSwitchMode={(mode) => {
+          if (mode === 'LEAVE') onSwitchToLeave?.();
+        }}
+      />
       <TodaySummaryStrip summary={liveSummary} />
 
-      {/* Why: gateway copy is only for a real trip. No trip today is not a missing GMAC. */}
-      {noTrips ? null : (
+      {/* Why: proximity is info only — trips stay visible either way */}
+      {allocatedVan ? (
         <VanProximityGate allocatedVan={allocatedVan} nearVan={nearVan} />
-      )}
+      ) : null}
 
-      {/* Why: mark-stop errors stay visible without wiping the whole home screen */}
       {markStopError ? (
         <AppText variant="body" color={colors.error} style={styles.statusText}>
           {markStopError}
         </AppText>
       ) : null}
 
-      {noTrips ? (
-        <View style={styles.allDoneCard}>
-          <Ionicons name="bus-outline" size={28} color={colors.textSecondary} />
-          <AppText variant="subtitle" style={styles.allDoneTitle}>
-            No trips today
-          </AppText>
-          <AppText variant="body" color={colors.textSecondary}>
-            When a trip is generated for your route, it will show up here.
-          </AppText>
-        </View>
-      ) : null}
-
-      {showTripCards && pickup && !pickupDone ? (
+      {pickup ? (
         <LiveTripCard
           trip={pickup}
           onStart={() => setPickup((current) => startTrip(current))}
-          // Why: POST COMPLETED so the trip ends manually at swipe time
           onEnd={() => handleEndTrip(pickup)}
-          // Why: POST next stop to school server so progress survives home poll
           onAdvanceStop={
             markingStop ? undefined : () => handleMarkNextStopDone(pickup)
           }
         />
       ) : null}
 
-      {showTripCards && pickupDone && drop && !dropDone ? (
-        <LiveTripCard
-          trip={drop}
-          onStart={() => setDrop((current) => startTrip(current))}
-          // Why: Drop swipe also persists COMPLETED on the server
-          onEnd={() => handleEndTrip(drop)}
-          // Why: same mark API as Pickup — progress stored per trip_id
-          onAdvanceStop={
-            markingStop ? undefined : () => handleMarkNextStopDone(drop)
-          }
-        />
-      ) : null}
-
-      {/* Why: show Drop alone when there is no Pickup trip for today */}
-      {showTripCards && !pickup && drop && !dropDone ? (
+      {drop ? (
         <LiveTripCard
           trip={drop}
           onStart={() => setDrop((current) => startTrip(current))}
           onEnd={() => handleEndTrip(drop)}
-          // Why: Drop-only days still need GPS fallback mark
           onAdvanceStop={
             markingStop ? undefined : () => handleMarkNextStopDone(drop)
           }
+          locked={!pickupDone}
         />
       ) : null}
 
-      {showTripCards && allDone ? (
+      {!pickup && !drop ? (
         <View style={styles.allDoneCard}>
-          <Ionicons name="checkmark-circle" size={28} color={colors.success} />
+          <Ionicons name="bus-outline" size={28} color={colors.textSecondary} />
           <AppText variant="subtitle" style={styles.allDoneTitle}>
-            All trips completed today
+            No trip scheduled today
           </AppText>
           <AppText variant="body" color={colors.textSecondary}>
-            Pickup and Drop are done. See Schedule or History for details.
+            When you have a pickup or drop today, it will show here.
           </AppText>
         </View>
       ) : null}

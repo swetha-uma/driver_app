@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { Keyboard, Pressable, View } from 'react-native';
 
 import AppButton from '../../../components/common/AppButton';
@@ -9,7 +9,7 @@ import { colors } from '../../../theme/colors';
 import styles from './LoginForm.styles';
 
 /** Phone field and send button. The driver must tick the terms before the code is requested. */
-export default function LoginForm({
+export default function LoginForm({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   mobileNumber,
   onChangeMobile,
   onSendOtp,

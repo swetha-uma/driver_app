@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const KEY = 'driver_app_backend_url';
+const KEY = 'driver_app_backend_url'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /** School server used until the driver saves another address. */
 export const DEFAULT_API = 'http://192.168.1.8:8080';

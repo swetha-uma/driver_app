@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -6,7 +6,7 @@ import AppText from '../../components/common/AppText';
 import { colors } from '../../theme/colors';
 import styles from './SwipeToStart.styles';
 
-const THUMB_SIZE = 52;
+const THUMB_SIZE = 52; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 const TRACK_PADDING = 4;
 
 /** Slide the thumb across to confirm start/end trip. tone=danger for end trip. */

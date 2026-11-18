@@ -7,7 +7,7 @@ import { loadBleGatewaySettings, saveBleGatewaySettings } from './bleGatewaySett
  * @param {string} allocatedVanGatewayMac
  * @param {{ gpsMinMoveMeters?: number, gpsPublishIntervalMs?: number }} [gpsSettings]
  */
-export async function syncVehicleGatewayMacFromHome(allocatedVanGatewayMac, gpsSettings) {
+export async function syncVehicleGatewayMacFromHome(allocatedVanGatewayMac, gpsSettings) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const normalizedMac = normalizeBleMacAddress(allocatedVanGatewayMac);
   if (!normalizedMac) return null;
 

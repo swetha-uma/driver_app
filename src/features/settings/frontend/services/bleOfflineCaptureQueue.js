@@ -7,7 +7,7 @@ import {
 import { postBleCaptureToSchoolServer, shouldEnqueueBleCaptureOffline } from './bleCaptureUploadApi';
 
 /** Read the offline capture queue from AsyncStorage. */
-async function readBleOfflineCaptureQueue() {
+async function readBleOfflineCaptureQueue() { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   try {
     const rawJson = await AsyncStorage.getItem(BLE_OFFLINE_QUEUE_STORAGE_KEY);
     if (!rawJson) return [];

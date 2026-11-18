@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -7,7 +7,7 @@ import { colors } from '../../../theme/colors';
 import styles from './AuthHero.styles';
 
 /** Shield drawn above the login and code titles. */
-function ShieldMark() {
+function ShieldMark() { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   return (
     <View style={styles.badge}>
       <View style={styles.shield}>

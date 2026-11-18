@@ -5,7 +5,7 @@ import { DRIVER_TOKEN_HEADER } from './loginApi';
  * Load staff-backed driver profile for My Profile / Driver details.
  * @param {string} token X-Driver-Token from verify-otp
  */
-export async function loadDriverProfile(token) {
+export async function loadDriverProfile(token) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: profile is private — backend resolves employee→staff from Redis session
   const response = await fetch(`${getApiBase()}/api/v1/driver-app/profile`, {
     method: 'GET',

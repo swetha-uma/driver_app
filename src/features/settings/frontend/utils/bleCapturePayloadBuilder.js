@@ -5,7 +5,7 @@ import { buildLocalIsoTimestampFromMillis } from './bleTimeHelpers';
  * Build POST /api/ble_capture body for one card sighting.
  * DMAC is always the radio MAC; UUID carries Type A name or Type B proximity UUID.
  */
-export function buildBleCaptureUploadPayload({ gatewayId, gmac, card }) {
+export function buildBleCaptureUploadPayload({ gatewayId, gmac, card }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: normalize MAC so ERP matching is case/format insensitive.
   const macAddress = normalizeBleMacAddress(card.mac);
   // Why: when cardId is only the MAC, UUID is redundant with DMAC.

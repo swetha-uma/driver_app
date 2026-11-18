@@ -18,10 +18,12 @@ private const val NOTIFICATION_ID = 4101
 private const val NOTIFICATION_TITLE = "BLE gateway is running"
 private const val NOTIFICATION_TEXT = "Receiving zone and ID cards"
 private const val WAKE_LOCK_TAG = "NativeBleScanner:scan"
+const val ACTION_STOP = "expo.modules.nativeblescanner.STOP_SCAN"
 
 /**
- * Keeps the app process alive with a persistent notification so the Bluetooth scan and the
- * uploads continue with the screen off. The scan itself stays in NativeBleScannerModule.
+ * Owns the gateway scan. Start keeps it alive with the screen locked. After a swipe-away,
+ * Android starts this service again and the scan resumes. Force stop in system settings
+ * still ends it until the driver opens the app and taps Start.
  */
 class ScanForegroundService : Service() {
   private var wakeLock: PowerManager.WakeLock? = null
@@ -29,6 +31,14 @@ class ScanForegroundService : Service() {
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    if (intent?.action == ACTION_STOP || !GatewayScanRuntime.isArmed(this)) {
+      GatewayScanRuntime.setArmed(this, false)
+      GatewayScanRuntime.stop(this)
+      releaseWakeLock()
+      stopForeground(true)
+      stopSelf()
+      return START_NOT_STICKY
+    }
     createNotificationChannel()
     val notification = buildNotification()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -37,7 +47,8 @@ class ScanForegroundService : Service() {
       startForeground(NOTIFICATION_ID, notification)
     }
     acquireWakeLock()
-    return START_NOT_STICKY
+    GatewayScanRuntime.start(this)
+    return START_STICKY
   }
 
   override fun onDestroy() {

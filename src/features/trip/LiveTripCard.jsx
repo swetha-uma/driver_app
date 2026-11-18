@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+﻿import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import AppButton from '../../components/common/AppButton';
@@ -8,7 +8,7 @@ import { colors } from '../../theme/colors';
 import SwipeToStart from './SwipeToStart';
 import styles from './LiveTripCard.styles';
 
-function statusTone(status) {
+function statusTone(status) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   if (status === TRIP_STATUS.IN_PROGRESS) return { bg: colors.warningBg, text: colors.warningText };
   if (status === TRIP_STATUS.COMPLETED) return { bg: colors.successBg, text: colors.successText };
   return { bg: colors.infoBg, text: colors.infoText };

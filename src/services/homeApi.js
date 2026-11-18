@@ -4,7 +4,7 @@ import { DRIVER_TOKEN_HEADER } from './loginApi';
 /**
  * Load greeting identity and today's Pickup / Drop cards for this driver token.
  */
-export async function loadDriverHome(token) {
+export async function loadDriverHome(token) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: home is private — backend reads school/employee from Redis via this header
   const response = await fetch(`${getApiBase()}/api/v1/driver-app/home`, {
     method: 'GET',

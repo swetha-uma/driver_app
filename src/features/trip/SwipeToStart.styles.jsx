@@ -1,10 +1,10 @@
-import { StyleSheet } from 'react-native';
+﻿import { StyleSheet } from 'react-native';
 
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { radii } from '../../theme/theme';
 
-const THUMB_SIZE = 52;
+const THUMB_SIZE = 52; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 export default StyleSheet.create({
   track: {

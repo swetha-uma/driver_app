@@ -15,7 +15,7 @@ import {
 import { getApiBase } from '../../backendUrl';
 
 /** Build factory defaults for first launch of BLE Gateway settings. */
-export function buildDefaultBleGatewaySettings() {
+export function buildDefaultBleGatewaySettings() { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: reuse the driver app Server URL so drivers do not type the host twice.
   let apiBaseUrl = 'http://10.0.2.2:8080';
   try {

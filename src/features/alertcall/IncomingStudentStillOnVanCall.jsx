@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, Text, Vibration, View } from 'react-native';
 import * as Speech from 'expo-speech';
 import { startDeviceRingtone, stopDeviceRingtone } from 'device-ringtone';
@@ -9,7 +9,7 @@ import { colors } from '../../theme/colors';
  * Stable id so a duplicate FCM for the same trip+student does not reopen the ring.
  * @param {{ tripId?: string, studentId?: string } | null} call
  */
-export function studentStillOnVanCallId(call) {
+export function studentStillOnVanCallId(call) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: empty call has nothing to dedupe on
   if (!call) return '';
   // Why: one ring per trip (backend table) — tripId alone is enough to dedupe

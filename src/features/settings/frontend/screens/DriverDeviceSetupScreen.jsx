@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
   SafeAreaView,
@@ -20,7 +20,7 @@ import { bleUiColors, bleUiRadii } from '../theme/bleUiColors';
  * Post-login setup: only native system Deny/Allow dialogs (Location → BT → background).
  * Why: when the driver taps Allow, Android turns that capability on (permission / BT / battery).
  */
-export default function DriverDeviceSetupScreen({ onSetupFinished }) {
+export default function DriverDeviceSetupScreen({ onSetupFinished }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [setupStatus, setSetupStatus] = useState(null);
   const [activeStep, setActiveStep] = useState(DRIVER_SETUP_STEPS.LOCATION);
   const [isRequesting, setIsRequesting] = useState(false);

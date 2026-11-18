@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import BleReaderScanScreen from './BleReaderScanScreen';
 /**
  * BLE Devices hub — driver app canvas theme with professional header + segmented tabs.
  */
-export default function BlePhoneGatewayHubScreen({ onBack }) {
+export default function BlePhoneGatewayHubScreen({ onBack }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [activeBleHubTab, setActiveBleHubTab] = useState('scanner');
   const [isBleConfigOverlayVisible, setIsBleConfigOverlayVisible] = useState(false);
   const [bleSettingsVersion, setBleSettingsVersion] = useState(0);

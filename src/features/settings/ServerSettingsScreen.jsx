@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,7 +13,7 @@ import { DEFAULT_API, getApiBase, saveApiBase } from './backendUrl';
 import styles from './ServerSettingsScreen.styles';
 
 /** Lets the driver point this install at a school server without a new build. */
-export default function ServerSettingsScreen({ onBack, onSaved }) {
+export default function ServerSettingsScreen({ onBack, onSaved }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [url, setUrl] = useState(getApiBase());
   const [message, setMessage] = useState('');
   const [ok, setOk] = useState(false);

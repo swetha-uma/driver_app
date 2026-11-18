@@ -1,5 +1,5 @@
 /** Build local wall-clock ISO without timezone suffix — matches CaptureAdvertisingRequest.time. */
-export function buildLocalIsoTimestampFromMillis(millis) {
+export function buildLocalIsoTimestampFromMillis(millis) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: server attendance windows use the phone's local clock string style.
   const date = new Date(millis);
   // Why: zero-pad so month/day/hour always take two digits.

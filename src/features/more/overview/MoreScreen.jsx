@@ -1,4 +1,4 @@
-import { Animated, ActivityIndicator, Modal, Pressable, ScrollView, View } from 'react-native';
+﻿import { Animated, ActivityIndicator, Modal, Pressable, ScrollView, View } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,8 +15,10 @@ import DriverDetailsScreen from '../driverDetails/DriverDetailsScreen';
 import styles from './MoreScreen.styles';
 
 // Why: menu labels stay local — they are not staff HR fields
-const PROFILE_MENU_ITEMS = [
+const PROFILE_MENU_ITEMS = [ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   { id: 'details', label: 'Driver details', icon: 'person', tone: 'purple' },
+  // Why: drivers can open Leave mode without re-login
+  { id: 'leaveMode', label: 'Leave request', icon: 'calendar', tone: 'slate' },
   // Why: open BLE Gateway/Reader settings hub so this phone can replace the external van gateway
   { id: 'bleGateway', label: 'BLE Gateway', icon: 'bluetooth', tone: 'slate' },
   { id: 'server', label: 'Server', icon: 'settings', tone: 'slate' },
@@ -25,6 +27,7 @@ const PROFILE_MENU_ITEMS = [
 
 const ICONS = {
   person: 'person',
+  calendar: 'calendar-outline',
   // Why: BLE menu row uses the bluetooth icon from Ionicons
   bluetooth: 'bluetooth',
   settings: 'settings',
@@ -161,7 +164,7 @@ function LogoutModal({ visible, onCancel, onConfirm }) {
 /**
  * Profile tab: header + menu from staff-backed GET /api/v1/driver-app/profile.
  */
-export default function MoreScreen({ driverToken, onLogout }) {
+export default function MoreScreen({ driverToken, onLogout, canLeave, onSwitchToLeave }) {
   // Why: block header until staff profile JSON arrives
   const [loading, setLoading] = useState(true);
   // Why: show retry when employee/staff lookup fails
@@ -202,11 +205,18 @@ export default function MoreScreen({ driverToken, onLogout }) {
       setLogoutVisible(true);
       return;
     }
+    if (itemId === 'leaveMode') {
+      // Why: open Leave shell without asking OTP again
+      onSwitchToLeave?.();
+      return;
+    }
     // Why: details / server / BLE gateway are nested screens opened from Profile only
     if (itemId === 'details' || itemId === 'server' || itemId === 'bleGateway') {
       setSelectedMenu(itemId);
     }
   }
+
+  const menuItems = PROFILE_MENU_ITEMS.filter((item) => item.id !== 'leaveMode' || canLeave);
 
   if (selectedMenu === 'details' && profile) {
     // Why: details rows are built from the same API payload as the header
@@ -276,7 +286,7 @@ export default function MoreScreen({ driverToken, onLogout }) {
     >
       <MoreHeader driver={profile} onOpenDetails={() => setSelectedMenu('details')} />
       <View style={styles.menuList}>
-        {PROFILE_MENU_ITEMS.map((item) => (
+        {menuItems.map((item) => (
           <MenuRow key={item.id} item={item} onPress={() => handleMenuPress(item.id)} />
         ))}
       </View>

@@ -11,11 +11,17 @@ const ICONS = {
   schedule: ['map', 'map-outline'],
   history: ['time', 'time-outline'],
   profile: ['person-circle', 'person-circle-outline'],
+  // Why: Leave-mode tabs (teacher/staff shell)
+  attendance: ['calendar', 'calendar-outline'],
+  apply: ['create', 'create-outline'],
+  leaves: ['documents', 'documents-outline'],
+  notice: ['notifications', 'notifications-outline'],
+  more: ['menu', 'menu-outline'],
 };
 
 /**
  * Driver app bottom tabs.
- * When tabsLocked, Schedule/History stay disabled; Home + Profile stay open.
+ * When tabsLocked, only Home + Profile stay open (legacy; Trip shell keeps tabs unlocked).
  */
 export default function BottomTabBar({
   tabs,

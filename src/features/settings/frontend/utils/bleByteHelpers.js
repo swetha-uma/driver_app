@@ -1,5 +1,5 @@
 /** Turn a hex dump ("02 01 06 …") into bytes so we can parse the advertisement PDU. */
-export function convertHexDumpToBytes(hexDump) {
+export function convertHexDumpToBytes(hexDump) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: empty input means the native scan did not include raw bytes.
   if (!hexDump) return null;
   // Why: strip spaces/colons so both nRF-style and compact hex work.

@@ -7,7 +7,7 @@ import {
 import { normalizeBleMacAddress, normalizeBleUuid } from './bleIdentifierHelpers';
 
 // Why: human labels for Reader rows and Gateway capture logs.
-const BLE_CARD_TYPE_LABELS = {
+const BLE_CARD_TYPE_LABELS = { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   NAME_SERVICE: 'Type A',
   IBEACON: 'Type B',
   UNKNOWN: 'Other BLE',

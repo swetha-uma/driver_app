@@ -6,7 +6,7 @@ import { DRIVER_TOKEN_HEADER } from './loginApi';
  * @param {string} token X-Driver-Token from verify-otp
  * @param {string} [dateIso] optional yyyy-MM-dd; omit for today
  */
-export async function loadDriverScheduleDay(token, dateIso) {
+export async function loadDriverScheduleDay(token, dateIso) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: schedule is private — backend resolves school/employee from Redis
   const query = dateIso ? `?date=${encodeURIComponent(dateIso)}` : '';
   const response = await fetch(`${getApiBase()}/api/v1/driver-app/schedule${query}`, {

@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, View } from 'react-native';
+﻿import { Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -7,7 +7,7 @@ import { colors } from '../../../theme/colors';
 import styles from './DriverDetailsScreen.styles';
 
 /** Labels that need stacked layout so long text (address) does not crush the row. */
-const STACKED_DETAIL_LABELS = new Set(['Address', 'Vehicle assigned']);
+const STACKED_DETAIL_LABELS = new Set(['Address', 'Vehicle assigned']); // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 function getInitial(name) {
   // Why: avatar letter falls back to D when the name is missing

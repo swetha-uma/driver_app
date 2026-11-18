@@ -6,7 +6,7 @@ import { getApiBase } from '../features/settings/backendUrl';
  * Mark-stop-done and end-trip persist on the school server.
  */
 
-export async function startTrip(_tripId) {
+export async function startTrip(_tripId) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: Phase 2 will POST start; until then Home updates local card status only
   throw new Error('Start trip API not implemented yet');
 }

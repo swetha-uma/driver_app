@@ -1,11 +1,11 @@
-import { View } from 'react-native';
+﻿import { View } from 'react-native';
 
 import AppText from '../../components/common/AppText';
 import { TRIP_STATUS } from '../../mockData/trip/todayTripMock';
 import { colors } from '../../theme/colors';
 import styles from './TodaySummaryStrip.styles';
 
-function chipTone(status) {
+function chipTone(status) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   if (status === TRIP_STATUS.IN_PROGRESS) {
     return { bg: colors.warningBg, text: colors.warningText };
   }

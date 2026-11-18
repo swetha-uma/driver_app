@@ -1,7 +1,7 @@
 import { normalizeBleMacAddress } from './bleIdentifierHelpers';
 
 /** Zone card MACs the phone must hear when zoneSource is zoneCard. */
-export function resolveBleZoneCardMacAddresses(gatewaySettings) {
+export function resolveBleZoneCardMacAddresses(gatewaySettings) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: phone-as-gateway mode never tracks zone cards.
   if (gatewaySettings.zoneSource === 'phone') return [];
   // Why: multi mode uses the full saved list of school-zone / vehicle MACs.

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+﻿import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
 import { bleUiColors, bleUiRadii } from '../theme/bleUiColors';
 
@@ -6,7 +6,7 @@ import { bleUiColors, bleUiRadii } from '../theme/bleUiColors';
  * Solid-color action button (app blue / red) — no washed-out gradient.
  * Why: LinearGradient was rendering pale grey on device; solid matches driver theme.
  */
-export default function BlePrimaryButton({
+export default function BlePrimaryButton({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   label,
   onPress,
   variant = 'primary',

@@ -1,5 +1,5 @@
 /** Normalize any pasted MAC into AA:BB:CC:DD:EE:FF so GMAC/DMAC comparisons stay consistent. */
-export function normalizeBleMacAddress(rawMac) {
+export function normalizeBleMacAddress(rawMac) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: empty values mean the field was left blank on purpose.
   if (!rawMac) return null;
   // Why: keep only hex digits so dashes, colons, or spaces still parse.

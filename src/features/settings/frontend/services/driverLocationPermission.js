@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
  * Ask the driver for location after login.
  * Why: van live tracking needs phone GPS; BLE student capture does not.
  */
-export async function requestDriverLocationPermissionAfterLogin() {
+export async function requestDriverLocationPermissionAfterLogin() { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   try {
     // Why: foreground is enough to read coords while the driver app is open.
     const foregroundResult = await Location.requestForegroundPermissionsAsync();

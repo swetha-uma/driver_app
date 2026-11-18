@@ -1,9 +1,9 @@
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+﻿import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { bleUiColors } from '../theme/bleUiColors';
 
 /** Zone source toggles — phone GMAC vs zone ID card(s). */
-export default function BleZoneSourceSection({
+export default function BleZoneSourceSection({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   zoneSource,
   zoneMode,
   gmac,

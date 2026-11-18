@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Animated, Keyboard } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -17,7 +17,7 @@ import VerifiedMark from './VerifiedMark';
 import styles from './OtpScreen.styles';
 
 /** Checks the 4-digit code and opens the next screen when accepted. */
-export default function OtpScreen({ mobileNumber, resendWaitSeconds = 60, onChangeNumber, onVerified }) {
+export default function OtpScreen({ mobileNumber, resendWaitSeconds = 60, onChangeNumber, onVerified }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [code, setCode] = useState('');
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);

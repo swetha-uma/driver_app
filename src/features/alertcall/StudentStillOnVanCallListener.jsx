@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Speech from 'expo-speech';
@@ -15,31 +15,19 @@ import {
   DRIVER_ALERT_CALL_CHANNEL_ID,
   DRIVER_STUDENT_STILL_ON_VAN_FCM_TYPE,
 } from '../../constants/alertCall';
-import { saveDriverDeviceToken } from '../../services/deviceTokenApi';
+import { saveTeacherDeviceToken } from '../teacherapp/api/teacherApi';
 import IncomingStudentStillOnVanCall, {
   studentStillOnVanCallId,
   useIncomingStudentStillOnVanCall,
 } from './IncomingStudentStillOnVanCall';
 import { DRIVER_ALERT_CALL_TASK } from './driverAlertCallTask';
 
-// Why: native Activity owns the ring — suppress duplicate tray banners when possible
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    const isStillOnVan =
-      notification?.request?.content?.data?.type === DRIVER_STUDENT_STILL_ON_VAN_FCM_TYPE;
-    return {
-      shouldShowBanner: !isStillOnVan,
-      shouldShowList: true,
-      shouldPlaySound: !isStillOnVan,
-      shouldSetBadge: false,
-    };
-  },
-});
+// Why: foreground sound/banner policy lives in App.js (plays default for late/leave)
 
 /**
- * Registers FCM after login and drives the native full-screen call + Answer TTS UI.
+ * Sets up alert-call channel/task + FSI, and saves FCM via the shared teacher device-token API.
  */
-export default function StudentStillOnVanCallListener({ driverToken }) {
+export default function StudentStillOnVanCallListener({ driverToken, teacherToken }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: after Answer, React shows the attended / TTS screen
   const { call, setCall } = useIncomingStudentStillOnVanCall();
   // Why: blocks duplicate FCM while one ring is already open
@@ -146,8 +134,13 @@ export default function StudentStillOnVanCallListener({ driverToken }) {
         return;
       }
       const deviceType = Platform.OS === 'ios' ? 'IOS' : 'ANDROID';
-      await saveDriverDeviceToken(driverToken, String(fcmToken), deviceType);
-      console.log('[DriverAlertCall] FCM token saved to backend');
+      // Why: one shared table/API (teacher-app) for Trip alerts + Leave/Notice pushes
+      if (teacherToken) {
+        await saveTeacherDeviceToken(teacherToken, String(fcmToken), deviceType);
+        console.log('[DriverAlertCall] FCM token saved via teacher-app device-token');
+      } else {
+        console.warn('[DriverAlertCall] no teacherToken — cannot save shared FCM row');
+      }
       // Why: right after login registration — detect FSI off and ask to turn on
       if (!cancelled) {
         promptFullScreenIntentIfNeeded();
@@ -261,7 +254,7 @@ export default function StudentStillOnVanCallListener({ driverToken }) {
       rejectedSub.remove();
       appStateSub.remove();
     };
-  }, [driverToken, setCall]);
+  }, [driverToken, teacherToken, setCall]);
 
   return (
     <IncomingStudentStillOnVanCall

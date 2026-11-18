@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Animated } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
@@ -13,7 +13,7 @@ import useSheetEntrance from '../components/useSheetEntrance';
 import LoginForm from './LoginForm';
 
 /** Asks for the school phone number and requests the login code. */
-export default function LoginScreen({ initialMobileNumber = '', onOtpRequested, onOpenServer }) {
+export default function LoginScreen({ initialMobileNumber = '', onOtpRequested, onOpenServer }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [mobileNumber, setMobileNumber] = useState(initialMobileNumber);
   const [agreed, setAgreed] = useState(initialMobileNumber.length === MOBILE_LENGTH);
   const [termsError, setTermsError] = useState(false);
@@ -53,7 +53,7 @@ export default function LoginScreen({ initialMobileNumber = '', onOtpRequested, 
       <StatusBar style="light" backgroundColor={colors.heroTop} translucent={false} />
       <KeyboardAvoidingContainer contentContainerStyle={sheetStyles.scroll}>
         <AuthHero
-          title="Welcome, driver"
+          title="Welcome, staff"
           subtitle="Sign in with your school phone number to manage van trips."
         />
         <Animated.View style={[sheetStyles.sheet, sheetMotion]}>

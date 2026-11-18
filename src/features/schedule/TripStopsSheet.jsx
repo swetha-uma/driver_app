@@ -1,4 +1,4 @@
-import { FlatList, Modal, Pressable, View } from 'react-native';
+﻿import { FlatList, Modal, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -6,7 +6,7 @@ import AppText from '../../components/common/AppText';
 import { colors } from '../../theme/colors';
 import styles from './TripStopsSheet.styles';
 
-function StopRow({ stop, index, isDrop }) {
+function StopRow({ stop, index, isDrop }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const accent = isDrop ? colors.secondary : colors.primary;
 
   return (

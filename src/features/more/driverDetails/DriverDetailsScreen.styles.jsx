@@ -1,10 +1,10 @@
-import { StyleSheet } from 'react-native';
+﻿import { StyleSheet } from 'react-native';
 
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { radii, shadows } from '../../../theme/theme';
 
-export default StyleSheet.create({
+export default StyleSheet.create({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   screen: { flex: 1, backgroundColor: colors.canvas },
   content: { paddingBottom: spacing.lg, gap: spacing.md },
   header: { minHeight: 232, marginHorizontal: spacing.md, marginTop: spacing.md, padding: spacing.md, paddingBottom: spacing.lg, borderRadius: radii.xl, overflow: 'hidden', ...shadows.hero },

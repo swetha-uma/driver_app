@@ -1,4 +1,4 @@
-import { ActivityIndicator, View } from 'react-native';
+﻿import { ActivityIndicator, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import AppText from '../../components/common/AppText';
@@ -6,10 +6,10 @@ import { colors } from '../../theme/colors';
 import styles from './VanProximityGate.styles';
 
 /**
- * Blocks trip cards until the van gateway reports this driver's BLE card
- * via POST /api/ble_capture (RSSI within vehicle threshold).
+ * Shows van proximity status from BLE gateway capture.
+ * Informational only — Home trip cards stay visible either way.
  */
-export default function VanProximityGate({ allocatedVan, nearVan }) {
+export default function VanProximityGate({ allocatedVan, nearVan }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: a trip exists but its vehicle has no gateway MAC. No-trip days never reach this card.
   if (!allocatedVan) {
     return (
@@ -35,7 +35,7 @@ export default function VanProximityGate({ allocatedVan, nearVan }) {
           {typeof allocatedVan.lastHeardRssi === 'number'
             ? ` · RSSI ${allocatedVan.lastHeardRssi}`
             : ''}
-          {' — trips unlocked'}
+          {' — near van'}
         </AppText>
       </View>
     );

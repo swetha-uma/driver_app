@@ -1,5 +1,5 @@
 // Why: default capture URL points at local school ERP until the driver saves another host.
-export const DEFAULT_BLE_CAPTURE_PATH = '/api/ble_capture';
+export const DEFAULT_BLE_CAPTURE_PATH = '/api/ble_capture'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 // Why: van live-tracking GPS uses the existing vehicle telemetry endpoint (separate from BLE).
 export const DEFAULT_VAN_GPS_CAPTURE_PATH = '/api/ble_vehicle_data_capture';

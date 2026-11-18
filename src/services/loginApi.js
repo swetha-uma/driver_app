@@ -2,7 +2,7 @@ import { OTP_LENGTH } from '../constants/auth';
 import { getApiBase } from '../features/settings/backendUrl';
 
 /** Header name the backend expects after verify-otp. */
-export const DRIVER_TOKEN_HEADER = 'X-Driver-Token';
+export const DRIVER_TOKEN_HEADER = 'X-Driver-Token'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /**
  * Ask the server to record a login code for this driver phone.

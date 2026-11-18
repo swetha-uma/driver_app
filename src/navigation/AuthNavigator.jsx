@@ -1,11 +1,11 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 
 import LoginScreen from '../features/auth/login/LoginScreen';
 import OtpScreen from '../features/auth/otp/OtpScreen';
 import ServerSettingsScreen from '../features/settings/ServerSettingsScreen';
 
 /** Phone screen first, then the code screen. */
-export default function AuthNavigator({ onAuthenticated }) {
+export default function AuthNavigator({ onAuthenticated }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [mobileNumber, setMobileNumber] = useState('');
   const [resendWaitSeconds, setResendWaitSeconds] = useState(60);
   const [step, setStep] = useState('login');

@@ -2,7 +2,7 @@ import { convertBytesToHexDump, convertBytesToUtf8Text, convertHexDumpToBytes } 
 import { parseIbeaconFromAdvertisementBytes } from './bleIbeaconParser';
 
 // Why: BLE AD type codes used in advertising and scan-response PDUs.
-const AD_TYPE_INCOMPLETE_UUID16 = 0x02;
+const AD_TYPE_INCOMPLETE_UUID16 = 0x02; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 const AD_TYPE_COMPLETE_UUID16 = 0x03;
 const AD_TYPE_INCOMPLETE_UUID128 = 0x06;
 const AD_TYPE_COMPLETE_UUID128 = 0x07;

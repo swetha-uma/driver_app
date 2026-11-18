@@ -22,7 +22,9 @@ import {
 import {
   getBlePhoneScanOwnerRole,
   isBlePhoneScanActive,
+  isBleGatewayServiceRunning,
   startBlePhoneScan,
+  rememberBleGatewayUploadTarget,
   stopBlePhoneScan,
 } from '../services/blePhoneScannerService';
 import {
@@ -46,7 +48,7 @@ import {
 } from '../utils/bleZoneCardHelpers';
 
 // Why: keep the on-screen capture log short so FlatList stays fast.
-const BLE_GATEWAY_MAX_LOG_ROWS = 100;
+const BLE_GATEWAY_MAX_LOG_ROWS = 100; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 // Why: poll EXIT / active zone / GPS status once per second while Gateway scan is running.
 const BLE_GATEWAY_EXIT_POLL_INTERVAL_MS = 1_000;
 
@@ -339,6 +341,30 @@ export function useBleGatewayCapture(settingsVersion) {
     setVanGpsPublishStatusMessage(getDriverVanGpsPublishStatusMessage());
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const syncRunningScan = async () => {
+      const running = (isBlePhoneScanActive() && getBlePhoneScanOwnerRole() === 'gateway')
+        || await isBleGatewayServiceRunning();
+      if (cancelled || !running) return;
+      setIsGatewayScanning(true);
+      setGatewayScanStatusMessage((current) => (
+        !current || current === 'Idle' || current === 'Stopped' ? 'Scanning' : current
+      ));
+      const settings = gatewaySettingsRef.current;
+      if (settings && !isDriverVanGpsPublishingActive()) {
+        startVanGpsAlongsideGatewayScan(settings).catch(() => undefined);
+      }
+      setVanGpsPublishStatusMessage(getDriverVanGpsPublishStatusMessage());
+    };
+    syncRunningScan();
+    const timer = setInterval(syncRunningScan, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [startVanGpsAlongsideGatewayScan]);
+
   /** Start or stop Gateway BLE + van GPS from the Start/Stop button. */
   const toggleBleGatewayScan = useCallback(async () => {
     // Why: second tap stops only when Gateway currently owns the scan.
@@ -374,6 +400,13 @@ export function useBleGatewayCapture(settingsVersion) {
     zoneCardTrackerRef.current.resetZoneTracking();
     setTrackedZoneCardMac(null);
 
+    // Why: the service posts cards itself after the phone locks or the app is swiped away.
+    await rememberBleGatewayUploadTarget({
+      ...currentGatewaySettings,
+      gmac:
+        resolveBleFixedZoneGatewayMac(currentGatewaySettings) ||
+        currentGatewaySettings.gmac,
+    });
     // Why: start native BLE scan owned by the gateway role (background service on).
     await startBlePhoneScan(
       {

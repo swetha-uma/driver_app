@@ -92,7 +92,22 @@ class NativeBleScannerModule : Module() {
       requestEnableLocation()
     }
 
-    AsyncFunction("startScan") {
+    AsyncFunction("isBackgroundScanArmed") {
+      val context = appContext.reactContext ?: return@AsyncFunction false
+      GatewayScanRuntime.isArmed(context) || GatewayScanRuntime.isScanning()
+    }
+
+    AsyncFunction("configureBackgroundUpload") { url: String, gmac: String, gatewayId: String ->
+      val context = requireContext()
+      GatewayScanRuntime.rememberUpload(context, url, gmac, gatewayId)
+    }
+
+    AsyncFunction("startScan") { useService: Boolean ->
+      if (useService) {
+        GatewayScanRuntime.setListener { result -> emitAdvertisement(result) }
+        GatewayScanRuntime.start(requireContext())
+        return@AsyncFunction "foreground-service"
+      }
       wantScanning = true
       profile = ScanProfile.LEGACY_AND_EXTENDED
       resultCount = 0
@@ -147,7 +162,6 @@ class NativeBleScannerModule : Module() {
     OnDestroy {
       wantScanning = false
       stopWatchdog()
-      stopInternal()
     }
   }
 
@@ -215,6 +229,7 @@ class NativeBleScannerModule : Module() {
 
   private fun startScanService() {
     val context = requireContext()
+    GatewayScanRuntime.setArmed(context, true)
     val serviceIntent = Intent(context, ScanForegroundService::class.java)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       context.startForegroundService(serviceIntent)
@@ -225,7 +240,10 @@ class NativeBleScannerModule : Module() {
 
   private fun stopScanService() {
     val context = requireContext()
-    context.stopService(Intent(context, ScanForegroundService::class.java))
+    GatewayScanRuntime.setArmed(context, false)
+    GatewayScanRuntime.stop(context)
+    val serviceIntent = Intent(context, ScanForegroundService::class.java).setAction(ACTION_STOP)
+    context.startService(serviceIntent)
   }
 
   private fun isIgnoringBatteryOptimizations(): Boolean {

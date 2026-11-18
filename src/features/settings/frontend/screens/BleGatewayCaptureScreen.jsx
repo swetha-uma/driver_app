@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,7 +13,7 @@ import { bleUiColors, bleUiRadii, bleUiShadows } from '../theme/bleUiColors';
  * Gateway tab: BLE student capture + van GPS — professional driver-theme layout.
  * Why: header lives in ListHeaderComponent so the whole page scrolls on short phones.
  */
-export default function BleGatewayCaptureScreen({
+export default function BleGatewayCaptureScreen({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   settingsVersion = 0,
   onOpenBleGatewayConfig,
 }) {

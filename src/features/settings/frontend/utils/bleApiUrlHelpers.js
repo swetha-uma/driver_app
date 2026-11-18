@@ -1,5 +1,5 @@
 // Why: default scheme so "192.168.1.10:8080" still becomes a valid fetch URL.
-const DEFAULT_HTTP_SCHEME = 'http://';
+const DEFAULT_HTTP_SCHEME = 'http://'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /** Clean a typed server root so capture POSTs do not fail with "Network request failed". */
 export function normalizeBleApiBaseUrl(rawInput) {

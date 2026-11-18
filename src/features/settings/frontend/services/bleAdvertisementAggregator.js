@@ -3,7 +3,7 @@ import { classifyBleAdvertisementAsCard } from '../utils/bleCardClassifier';
 import { normalizeBleMacAddress } from '../utils/bleIdentifierHelpers';
 
 // Why: drop devices not heard for 5 minutes so memory stays bounded on long trips.
-const STALE_DEVICE_AFTER_MS = 5 * 60_000;
+const STALE_DEVICE_AFTER_MS = 5 * 60_000; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 // Why: prune only every N packets to avoid Map walks on every advertisement.
 const PRUNE_EVERY_PACKETS = 300;
 // Why: native sometimes omits RSSI — use a weak default so filters still apply.

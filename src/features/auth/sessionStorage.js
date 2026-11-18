@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const KEY = 'driver_app_session_v1';
+const KEY = 'driver_app_session_v1'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /**
  * Keep the verified driver session on the phone so OTP is only asked

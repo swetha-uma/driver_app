@@ -17,7 +17,7 @@ import {
 } from './driverVanGpsWebSocket';
 
 // Why: one timer for the whole app so Home remounts do not create duplicate GPS loops.
-let vanGpsPublishTimerId = null;
+let vanGpsPublishTimerId = null; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 // Why: remember the last publish config so we can restart after a settings change.
 let activeVanGpsPublishConfig = null;
 // Why: UI can show whether GPS publishing is live.

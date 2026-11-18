@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Why: remember native Location / BT / background dialogs were already asked on this phone.
-const DRIVER_DEVICE_SETUP_STORAGE_KEY = 'driver_app_device_setup_complete_v1';
+const DRIVER_DEVICE_SETUP_STORAGE_KEY = 'driver_app_device_setup_complete_v1'; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /** True when system permission dialogs were already shown once. */
 export async function isDriverDeviceSetupComplete() {

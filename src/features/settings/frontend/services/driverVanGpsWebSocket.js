@@ -7,7 +7,7 @@ import {
 import { normalizeBleApiBaseUrl } from '../utils/bleApiUrlHelpers';
 
 // Why: one STOMP client for the whole app so Start/Stop does not leak sockets.
-let stompClient = null;
+let stompClient = null; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 // Why: remember which API host this socket belongs to so a URL change forces reconnect.
 let connectedApiBaseUrl = '';
 // Why: separate flag so UI can show connected even before stompClient.connected flips.

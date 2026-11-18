@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { getBlePhoneScanStatsSnapshot } from '../services/blePhoneScannerService';
 import { bleUiColors, bleUiRadii } from '../theme/bleUiColors';
 
-const BLE_SCAN_STATS_UI_POLL_MS = 1_000;
+const BLE_SCAN_STATS_UI_POLL_MS = 1_000; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 /** Live packet / restart counters while scan is active. */
 export default function BleScanStatsBar({ active }) {

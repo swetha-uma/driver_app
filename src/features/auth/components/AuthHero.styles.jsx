@@ -1,10 +1,10 @@
-import { Dimensions, Platform, StyleSheet } from 'react-native';
+﻿import { Dimensions, Platform, StyleSheet } from 'react-native';
 
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { radii } from '../../../theme/theme';
 
-const { height: windowHeight } = Dimensions.get('window');
+const { height: windowHeight } = Dimensions.get('window'); // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
 
 export default StyleSheet.create({
   hero: {

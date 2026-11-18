@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 
 import AppText from '../../../components/common/AppText';
 import styles from './VerifiedMark.styles';
 
 /** Check mark shown for a moment after the login code is accepted. */
-export default function VerifiedMark() {
+export default function VerifiedMark() { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const circleOpacity = useRef(new Animated.Value(0)).current;
   const circleScale = useRef(new Animated.Value(0.4)).current;
   const haloOpacity = useRef(new Animated.Value(0)).current;

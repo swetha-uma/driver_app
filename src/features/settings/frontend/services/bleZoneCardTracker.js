@@ -2,7 +2,7 @@
  * Tracks which zone card the phone is currently inside.
  * Strongest recently heard zone card wins; switches only with a clear RSSI margin.
  */
-export class BleZoneCardTracker {
+export class BleZoneCardTracker { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: remember last RSSI/time per configured zone-card MAC.
   sightingsByMac = new Map();
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 
 import {
@@ -9,7 +9,7 @@ import { bleUiColors } from '../theme/bleUiColors';
 import BlePrimaryButton from './BlePrimaryButton';
 
 /** Battery exemption status for background Gateway scan. */
-export default function BleBackgroundScanSection() {
+export default function BleBackgroundScanSection() { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [isBatteryExemptionGranted, setIsBatteryExemptionGranted] = useState(null);
 
   const refreshBatteryExemptionStatus = useCallback(async () => {

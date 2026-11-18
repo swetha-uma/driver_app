@@ -2,7 +2,7 @@
  * Tracks per-card presence.
  * ENTER and PRESENT are uploaded; EXIT stays local so server checkout silence still works.
  */
-export class BleCardPresenceEventEngine {
+export class BleCardPresenceEventEngine { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   // Why: store one track per cardKey (card + zone) so ENTER/PRESENT timing is independent.
   tracksByCardKey = new Map();
 
