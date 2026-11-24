@@ -15,6 +15,11 @@ import {
   isDriverVanGpsWebSocketConnected,
   publishDriverVanGpsOverWebSocket,
 } from './driverVanGpsWebSocket';
+import {
+  saveVanGpsBackgroundConfig,
+  startVanGpsBackgroundUpdates,
+  stopVanGpsBackgroundUpdates,
+} from './driverVanGpsBackgroundTask';
 
 // Why: one timer for the whole app so Home remounts do not create duplicate GPS loops.
 let vanGpsPublishTimerId = null; // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
@@ -212,6 +217,18 @@ export async function startDriverVanGpsPublishing(publishConfig) {
   vanGpsPublishTimerId = setInterval(() => {
     void publishOneVanGpsSample();
   }, intervalMs);
+
+  // Why: JS timers die when locked/swiped — native background location keeps parent map alive
+  try {
+    await saveVanGpsBackgroundConfig(activeVanGpsPublishConfig);
+    await startVanGpsBackgroundUpdates(intervalMs);
+    lastVanGpsPublishStatusMessage = `${lastVanGpsPublishStatusMessage} · background on`;
+  } catch (error) {
+    lastVanGpsPublishStatusMessage =
+      error instanceof Error
+        ? `GPS foreground only · ${error.message}`
+        : 'GPS foreground only — allow background location';
+  }
 }
 
 /** Stop continuous van GPS publishing (Stop scan / logout). */
@@ -228,4 +245,5 @@ export function stopDriverVanGpsPublishing() {
   lastVanGpsPublishStatusMessage = 'GPS stopped';
   // Why: close the socket so logout does not keep a live tracking channel open.
   void disconnectDriverVanGpsWebSocket();
+  void stopVanGpsBackgroundUpdates();
 }

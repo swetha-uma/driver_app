@@ -6,10 +6,11 @@ import ModeSwitcher from '../teacherapp/components/ModeSwitcher';
 import { colors } from '../../theme/colors';
 import styles from './DriverGreetingCard.styles';
 
-/** Home greeting with driver name + Trip/Leave switch when leave is available. */
+/** Home greeting with staff name, real designation, and Trip/Leave switch when leave is available. */
 export default function DriverGreetingCard({ // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   greeting,
   name,
+  designation,
   onOpenProfile,
   canLeave,
   onSwitchMode,
@@ -17,6 +18,9 @@ export default function DriverGreetingCard({ // KAN-27 | Driver App Module Requi
   const initial = (name || 'D').trim().charAt(0).toUpperCase();
   // Why: Profile stays open even out of gateway range when the parent passes onOpenProfile
   const canOpenProfile = typeof onOpenProfile === 'function';
+  // Why: show HR designation (Admin / Driver - Operation / etc.), never hardcode Driver
+  const roleLabel = String(designation || '').trim() || 'Staff';
+  const roleLine = canOpenProfile ? `${roleLabel} · Open profile` : roleLabel;
 
   return (
     <View style={styles.shadow}>
@@ -52,8 +56,8 @@ export default function DriverGreetingCard({ // KAN-27 | Driver App Module Requi
               <AppText variant="subtitle" color={colors.white} style={styles.name} numberOfLines={1}>
                 {name}
               </AppText>
-              <AppText variant="caption" color={colors.onPrimaryMuted}>
-                {canOpenProfile ? 'Driver · Open profile' : 'Driver'}
+              <AppText variant="caption" color={colors.onPrimaryMuted} numberOfLines={1}>
+                {roleLine}
               </AppText>
             </View>
           </Pressable>

@@ -27,6 +27,7 @@ export default function LiveTripCard({
   lockedMessage = 'Finish Pickup before starting Drop',
 }) {
   const tone = statusTone(trip.status);
+  const isUpcoming = Boolean(trip.upcoming);
   const isScheduled = trip.status === TRIP_STATUS.SCHEDULED;
   const isInProgress = trip.status === TRIP_STATUS.IN_PROGRESS;
   const isCompleted = trip.status === TRIP_STATUS.COMPLETED;
@@ -44,7 +45,7 @@ export default function LiveTripCard({
             color={colors.primary}
           />
           <AppText variant="caption" color={colors.primary} style={styles.typeText}>
-            Live · {trip.tripType}
+            {isUpcoming ? `Upcoming · ${trip.tripType}` : `Live · ${trip.tripType}`}
           </AppText>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: tone.bg }]}>
@@ -142,7 +143,16 @@ export default function LiveTripCard({
         </View>
       ) : null}
 
-      {!locked && isScheduled ? (
+      {!locked && isUpcoming && isScheduled ? (
+        <View style={styles.lockedNote}>
+          <Ionicons name="time-outline" size={18} color={colors.textSecondary} />
+          <AppText variant="body" color={colors.textSecondary} style={styles.lockedText}>
+            Upcoming today · starts at {trip.scheduledStartTime}. Live controls open when the trip begins.
+          </AppText>
+        </View>
+      ) : null}
+
+      {!locked && !isUpcoming && isScheduled && onStart ? (
         <View style={styles.actionWrap}>
           <SwipeToStart
             label={`Swipe to start ${trip.tripType.toLowerCase()}`}

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Speech from 'expo-speech';
@@ -15,7 +15,7 @@ import {
   DRIVER_ALERT_CALL_CHANNEL_ID,
   DRIVER_STUDENT_STILL_ON_VAN_FCM_TYPE,
 } from '../../constants/alertCall';
-import { saveTeacherDeviceToken } from '../teacherapp/api/teacherApi';
+import { registerStaffFcmToken } from '../teacherapp/push/registerStaffFcmToken';
 import IncomingStudentStillOnVanCall, {
   studentStillOnVanCallId,
   useIncomingStudentStillOnVanCall,
@@ -34,46 +34,51 @@ export default function StudentStillOnVanCallListener({ driverToken, teacherToke
   const openIdRef = useRef('');
   // Why: true once native Answer — modal starts in attended mode (no second ring)
   const answeredRef = useRef(false);
-  // Why: only one full-screen-permission prompt per login session
-  const fullScreenPromptShownRef = useRef(false);
+  // Why: true while the FSI Allow/Deny alert is on screen — blocks duplicate dialogs
+  const fullScreenPromptOpenRef = useRef(false);
 
   useEffect(() => {
     // Why: ignore when the driver is logged out
     if (!driverToken) return undefined;
     let cancelled = false;
-    // Why: new login session may need the FSI prompt again
-    fullScreenPromptShownRef.current = false;
+    fullScreenPromptOpenRef.current = false;
 
     /**
-     * After login: if full-screen notifications are off, show Allow / Deny.
+     * If full-screen notifications are off, show Allow / Deny.
      * Why: without Allow, Android only shows a tray message instead of the blue call screen.
      * Why: Android has no auto-grant API — Allow opens the system page so the driver can enable it.
+     * Why: re-ask on resume when the switch was turned off after Allow.
      */
     function promptFullScreenIntentIfNeeded() {
       if (cancelled || Platform.OS !== 'android') {
         return;
       }
-      if (fullScreenPromptShownRef.current) {
-        return;
-      }
-      // Why: already allowed — nothing to ask
+      // Why: already allowed — clear any open-prompt lock
       if (canUseFullScreenIntent()) {
+        fullScreenPromptOpenRef.current = false;
         return;
       }
-      fullScreenPromptShownRef.current = true;
+      if (fullScreenPromptOpenRef.current) {
+        return;
+      }
+      fullScreenPromptOpenRef.current = true;
       Alert.alert(
         'Allow full screen notifications?',
-        'Driver App needs full screen notifications so alert calls open over other apps and the lock screen with ringtone.\n\nTap Allow, then turn the switch On in the next screen.',
+        'Teacher App needs full screen notifications so alert calls open over other apps and the lock screen with ringtone.\n\nTap Allow, then turn the switch On in the next screen.',
         [
-          // Why: Deny = skip for this login; calls may only show as a notification
           {
             text: 'Deny',
             style: 'cancel',
+            // Why: allow a later resume to ask again if still off
+            onPress: () => {
+              fullScreenPromptOpenRef.current = false;
+            },
           },
           {
             text: 'Allow',
             // Why: OS cannot grant FSI from the app — open Settings where the switch lives
             onPress: () => {
+              fullScreenPromptOpenRef.current = false;
               openFullScreenIntentSettings();
             },
           },
@@ -114,32 +119,25 @@ export default function StudentStillOnVanCallListener({ driverToken, teacherToke
       } catch (taskError) {
         console.warn('[DriverAlertCall] registerTaskAsync failed:', taskError);
       }
-      let device;
+      // Why: Option 1 — same FCM row; server updates employee_id + phone for this login
       try {
-        device = await Notifications.getDevicePushTokenAsync();
-      } catch (tokenError) {
-        console.warn('[DriverAlertCall] getDevicePushTokenAsync failed:', tokenError);
-        // Why: still prompt for FSI even if token save fails — call UI needs it
-        if (!cancelled) {
-          promptFullScreenIntentIfNeeded();
+        if (teacherToken) {
+          await registerStaffFcmToken(teacherToken);
+          console.log('[DriverAlertCall] FCM bound via teacher-app device-token');
+        } else {
+          const device = await Notifications.getDevicePushTokenAsync();
+          const fcmToken = device?.data;
+          if (!fcmToken) {
+            console.warn('[DriverAlertCall] no FCM token from device; rebuild with google-services.json');
+          } else {
+            const deviceType = Platform.OS === 'ios' ? 'IOS' : 'ANDROID';
+            const { saveDriverDeviceToken } = await import('../../services/deviceTokenApi');
+            await saveDriverDeviceToken(driverToken, String(fcmToken), deviceType);
+            console.log('[DriverAlertCall] FCM token saved via driver-app device-token');
+          }
         }
-        return;
-      }
-      const fcmToken = device?.data;
-      if (!fcmToken || cancelled) {
-        console.warn('[DriverAlertCall] no FCM token from device; rebuild with google-services.json');
-        if (!cancelled) {
-          promptFullScreenIntentIfNeeded();
-        }
-        return;
-      }
-      const deviceType = Platform.OS === 'ios' ? 'IOS' : 'ANDROID';
-      // Why: one shared table/API (teacher-app) for Trip alerts + Leave/Notice pushes
-      if (teacherToken) {
-        await saveTeacherDeviceToken(teacherToken, String(fcmToken), deviceType);
-        console.log('[DriverAlertCall] FCM token saved via teacher-app device-token');
-      } else {
-        console.warn('[DriverAlertCall] no teacherToken — cannot save shared FCM row');
+      } catch (saveError) {
+        console.warn('[DriverAlertCall] device token save failed:', saveError);
       }
       // Why: right after login registration — detect FSI off and ask to turn on
       if (!cancelled) {
@@ -241,8 +239,8 @@ export default function StudentStillOnVanCallListener({ driverToken, teacherToke
     const appStateSub = AppState.addEventListener('change', (next) => {
       if (next === 'active') {
         consumePendingAnswer();
-        // Why: driver may return from Settings after turning FSI on — no re-prompt if already shown
-        // Why: if they dismissed earlier and still off, we do not nag every resume (once per login)
+        // Why: returning from Settings or after turning FSI off — ask again while still off
+        promptFullScreenIntentIfNeeded();
       }
     });
 

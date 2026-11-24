@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Driver App",
+    "name": "Teacher App",
     "slug": "School-ERP-DriverApp",
     "version": "1.0.6",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/4c7fab47-cfbb-46b7-975e-96019ded5272"
+      "url": "https://u.expo.dev/9b29622e-b101-4c32-aef8-600f669a12ff"
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +25,7 @@
       "barStyle": "light-content"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -61,9 +62,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Driver App to use your location for van live tracking while you act as the vehicle gateway.",
-          "locationAlwaysPermission": "Allow Driver App to use your location for van live tracking while you act as the vehicle gateway.",
-          "locationWhenInUsePermission": "Allow Driver App to use your location for van live tracking while you act as the vehicle gateway.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Teacher App to use your location for van live tracking while you act as the vehicle gateway.",
+          "locationAlwaysPermission": "Allow Teacher App to use your location for van live tracking while you act as the vehicle gateway.",
+          "locationWhenInUsePermission": "Allow Teacher App to use your location for van live tracking while you act as the vehicle gateway.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
@@ -81,9 +82,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a788cdf4-5245-4370-a9dd-94e435c58f6a"
+        "projectId": "9b29622e-b101-4c32-aef8-600f669a12ff"
       }
     },
-    "owner": "swethauma"
+    "owner": "infinitevision"
   }
 }

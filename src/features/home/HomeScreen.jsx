@@ -43,6 +43,9 @@ function buildSummaryFromCards(pickup, drop) {
   if (drop?.status === TRIP_STATUS.IN_PROGRESS) {
     return { headline: 'Drop is live', chips };
   }
+  if (pickup?.upcoming || drop?.upcoming) {
+    return { headline: 'Upcoming trips today', chips };
+  }
   if (pickup?.status === TRIP_STATUS.SCHEDULED || drop?.status === TRIP_STATUS.SCHEDULED) {
     return { headline: 'Today\'s trips', chips };
   }
@@ -79,6 +82,7 @@ function endTripLocal(trip) {
 export default function HomeScreen({
   driverToken,
   driverName,
+  designation,
   onOpenProfile,
   canLeave,
   onSwitchToLeave,
@@ -96,7 +100,9 @@ export default function HomeScreen({
   // Why: optional proximity banner (does not gate trip cards)
   const [nearVan, setNearVan] = useState(false);
   // Why: greeting prefers the employee name from the server
-  const [resolvedName, setResolvedName] = useState(driverName || 'Driver');
+  const [resolvedName, setResolvedName] = useState(driverName || 'Staff');
+  // Why: Home role line uses login designation, refreshed from home API when present
+  const [resolvedDesignation, setResolvedDesignation] = useState(designation || '');
   // Why: disable Mark stop done while the POST is in flight
   const [markingStop, setMarkingStop] = useState(false);
   // Why: disable Swipe to end while the end POST is in flight
@@ -126,6 +132,10 @@ export default function HomeScreen({
       // Why: prefer server name so greeting matches the employee record
       if (data.driverName) {
         setResolvedName(data.driverName);
+      }
+      // Why: Home role line should match employees.designation from the home payload
+      if (data.designation != null && String(data.designation).trim()) {
+        setResolvedDesignation(String(data.designation).trim());
       }
       setPickup(data.pickup ?? null);
       setDrop(data.drop ?? null);
@@ -159,6 +169,13 @@ export default function HomeScreen({
     // Why: first paint loads today's trips
     refreshHome({ quiet: false });
   }, [refreshHome]);
+
+  useEffect(() => {
+    // Why: keep greeting role in sync when login session designation arrives
+    if (designation != null && String(designation).trim()) {
+      setResolvedDesignation(String(designation).trim());
+    }
+  }, [designation]);
 
   useEffect(() => {
     // Why: keep trip status + optional nearVan banner fresh while Home is open
@@ -283,6 +300,7 @@ export default function HomeScreen({
       <DriverGreetingCard
         greeting={greeting}
         name={name}
+        designation={resolvedDesignation || designation}
         onOpenProfile={onOpenProfile}
         canLeave={canLeave}
         onSwitchMode={(mode) => {
@@ -305,10 +323,16 @@ export default function HomeScreen({
       {pickup ? (
         <LiveTripCard
           trip={pickup}
-          onStart={() => setPickup((current) => startTrip(current))}
+          onStart={
+            pickup.upcoming
+              ? undefined
+              : () => setPickup((current) => startTrip(current))
+          }
           onEnd={() => handleEndTrip(pickup)}
           onAdvanceStop={
-            markingStop ? undefined : () => handleMarkNextStopDone(pickup)
+            markingStop || pickup.upcoming
+              ? undefined
+              : () => handleMarkNextStopDone(pickup)
           }
         />
       ) : null}
@@ -316,10 +340,16 @@ export default function HomeScreen({
       {drop ? (
         <LiveTripCard
           trip={drop}
-          onStart={() => setDrop((current) => startTrip(current))}
+          onStart={
+            drop.upcoming
+              ? undefined
+              : () => setDrop((current) => startTrip(current))
+          }
           onEnd={() => handleEndTrip(drop)}
           onAdvanceStop={
-            markingStop ? undefined : () => handleMarkNextStopDone(drop)
+            markingStop || drop.upcoming
+              ? undefined
+              : () => handleMarkNextStopDone(drop)
           }
           locked={!pickupDone}
         />
