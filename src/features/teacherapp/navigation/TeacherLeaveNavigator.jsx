@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, BackHandler, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -46,8 +46,50 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
   const [tab, setTab] = useState('home');
   const [stack, setStack] = useState('main');
   const [leaveId, setLeaveId] = useState(null);
+  const [lateAttendanceDate, setLateAttendanceDate] = useState(null);
   // Why: action-required pushes show Mark as read / Remind me later first
   const [ackNotification, setAckNotification] = useState(null);
+  // Why: drives the Notice bell shake + red dot until the teacher opens it
+  const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
+  // Why: session memory — after Mark as read, never reopen that popup (any type)
+  const dismissedAckIdsRef = useRef(new Set());
+
+  const isDismissedAck = useCallback((notificationId) => {
+    if (notificationId == null) return false;
+    return dismissedAckIdsRef.current.has(String(notificationId));
+  }, []);
+
+  const rememberDismissedAck = useCallback((notificationId) => {
+    if (notificationId == null) return;
+    dismissedAckIdsRef.current.add(String(notificationId));
+  }, []);
+
+  // Why: Mark as read → status READ; never reopen that popup from stale FCM / tray tap
+  const showAckIfStillPending = useCallback(
+    async (candidate) => {
+      if (!teacherToken || !candidate?.actionRequired || !candidate.notificationId) {
+        return;
+      }
+      if (isDismissedAck(candidate.notificationId)) {
+        return;
+      }
+      try {
+        const rows = await fetchTeacherPendingNotificationAcks(teacherToken);
+        const openRows = (Array.isArray(rows) ? rows : []).filter(
+          (row) => !isDismissedAck(row.notificationId),
+        );
+        setHasUnreadNotice(openRows.length > 0);
+        const stillPending = openRows.some(
+          (row) => String(row.notificationId) === String(candidate.notificationId),
+        );
+        if (!stillPending) return;
+        setAckNotification((prev) => prev ?? candidate);
+      } catch {
+        // Why: offline — do not force a dialog that may already be marked read
+      }
+    },
+    [teacherToken, isDismissedAck],
+  );
 
   // Why: FCM tap — dialog when actionRequired; otherwise open Late/Notice
   useEffect(() => {
@@ -58,49 +100,64 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
         : deepLinkTarget;
 
     if (target.actionRequired && target.notificationId) {
-      // Why: reject/cancel/late-pending need explicit ack or snooze
-      setAckNotification(target);
+      // Why: reject/cancel/late-pending need explicit ack or snooze (skip if already READ)
+      void showAckIfStillPending(target);
       onDeepLinkConsumed?.();
       return;
     }
 
     if (target.screen === 'lateReason') {
+      setLateAttendanceDate(null);
       setStack('lateReason');
     } else if (target.screen === 'notice') {
       setTab('notice');
       setStack('main');
     }
     onDeepLinkConsumed?.();
-  }, [deepLinkTarget, onDeepLinkConsumed]);
+  }, [deepLinkTarget, onDeepLinkConsumed, showAckIfStillPending]);
 
   // Why: mount + resume — show first pending ack if none open
   const loadPendingAck = useCallback(async () => {
     if (!teacherToken) return;
     try {
       const rows = await fetchTeacherPendingNotificationAcks(teacherToken);
-      if (!Array.isArray(rows) || rows.length === 0) return;
-      const target = teacherAckTargetFromPendingRow(rows[0]);
+      const openRows = (Array.isArray(rows) ? rows : []).filter(
+        (row) => !isDismissedAck(row.notificationId),
+      );
+      setHasUnreadNotice(openRows.length > 0);
+      if (openRows.length === 0) return;
+      const target = teacherAckTargetFromPendingRow(openRows[0]);
       if (!target) return;
       // Why: do not replace a dialog already on screen
       setAckNotification((prev) => prev ?? target);
     } catch {
       // Why: offline / soft fail — home banner still covers late reason
     }
-  }, [teacherToken]);
+  }, [teacherToken, isDismissedAck]);
 
   // Why: after Mark as read / Remind me later — open the next pending push immediately
-  const openNextPendingAck = useCallback(async () => {
-    setAckNotification(null);
-    if (!teacherToken) return;
-    try {
-      const rows = await fetchTeacherPendingNotificationAcks(teacherToken);
-      if (!Array.isArray(rows) || rows.length === 0) return;
-      const target = teacherAckTargetFromPendingRow(rows[0]);
-      if (target) setAckNotification(target);
-    } catch {
-      // Why: soft fail — user can reopen app later for remaining acks
-    }
-  }, [teacherToken]);
+  const openNextPendingAck = useCallback(
+    async (result) => {
+      if (result?.markedRead && result.notificationId != null) {
+        rememberDismissedAck(result.notificationId);
+      }
+      setAckNotification(null);
+      if (!teacherToken) return;
+      try {
+        const rows = await fetchTeacherPendingNotificationAcks(teacherToken);
+        const openRows = (Array.isArray(rows) ? rows : []).filter(
+          (row) => !isDismissedAck(row.notificationId) && String(row.notificationId) !== String(result?.notificationId ?? ''),
+        );
+        setHasUnreadNotice(openRows.length > 0);
+        if (openRows.length === 0) return;
+        const target = teacherAckTargetFromPendingRow(openRows[0]);
+        if (target) setAckNotification(target);
+      } catch {
+        // Why: soft fail — user can reopen app later for remaining acks
+      }
+    },
+    [teacherToken, isDismissedAck, rememberDismissedAck],
+  );
 
   useEffect(() => {
     if (!teacherToken) return undefined;
@@ -112,13 +169,13 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
     const appSub = AppState.addEventListener('change', (next) => {
       if (next === 'active') loadPendingAck();
     });
-    // Why: reminder FCM while app is open — queue behind current dialog
+    // Why: reminder FCM while app is open — only if still PENDING on server
     const pushSub = Notifications.addNotificationReceivedListener((event) => {
       const target = teacherPushTargetFromNotificationContent(
         event?.request?.content,
       );
       if (target?.actionRequired && target.notificationId) {
-        setAckNotification((prev) => prev ?? target);
+        void showAckIfStillPending(target);
       }
     });
 
@@ -127,7 +184,7 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
       appSub.remove();
       pushSub.remove();
     };
-  }, [teacherToken, loadPendingAck]);
+  }, [teacherToken, loadPendingAck, showAckIfStillPending]);
 
   // Why: Android system Back must leave Late/Detail stack on first press
   useEffect(() => {
@@ -150,13 +207,18 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
       } else if (name === 'MyAttendance') {
         setTab('attendance');
         setStack('main');
-      } else if (name === 'LateReason') setStack('lateReason');
-      else if (name === 'LeaveDetail') {
+      } else if (name === 'LateReason') {
+        setLateAttendanceDate(params?.attendanceDate || null);
+        setStack('lateReason');
+      } else if (name === 'LeaveDetail') {
         setLeaveId(params?.id);
         setStack('leaveDetail');
       }
     },
-    goBack: () => setStack('main'),
+    goBack: () => {
+      setLateAttendanceDate(null);
+      setStack('main');
+    },
   };
 
   // Why: stays on every tab until Mark as read / Remind me later; Late stack can open under it
@@ -174,10 +236,14 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
               teacherToken={teacherToken}
               staffName={staffName}
               designation={designation}
+              attendanceDate={lateAttendanceDate}
               navigation={navigation}
-              onBack={() => setStack('main')}
+              onBack={() => {
+                setLateAttendanceDate(null);
+                setStack('main');
+              }}
               onSubmitted={() => {
-                void openNextPendingAck();
+                void openNextPendingAck({ markedRead: false });
               }}
             />
           ) : null}
@@ -235,6 +301,7 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
             onChange={setTab}
             bottomInset={insets.bottom}
             tabsLocked={false}
+            unreadTabs={{ notice: hasUnreadNotice }}
           />
         ) : null}
       </View>
@@ -243,8 +310,8 @@ export default function TeacherLeaveNavigator({ // KAN-28 | Teacher App Module R
         visible={ackVisible}
         teacherToken={teacherToken}
         notification={ackNotification}
-        onDone={() => {
-          void openNextPendingAck();
+        onDone={(result) => {
+          void openNextPendingAck(result);
         }}
       />
     </View>

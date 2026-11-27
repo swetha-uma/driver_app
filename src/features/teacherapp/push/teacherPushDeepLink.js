@@ -2,6 +2,7 @@
 export const TEACHER_PUSH_LATE_REASON = 'LATE_REASON';
 export const TEACHER_PUSH_LATE_STATUS = 'LATE_STATUS';
 export const TEACHER_PUSH_LEAVE_STATUS = 'LEAVE_STATUS';
+export const TEACHER_PUSH_PAYROLL_LOP = 'PAYROLL_LOP';
 
 /**
  * Android channel — must match TeacherAppPushService.ANDROID_CHANNEL_ID.
@@ -28,7 +29,11 @@ export function consumePendingTeacherPushDeepLink() {
 export function teacherPushScreenFromType(type) {
   const normalized = String(type || '').trim().toUpperCase();
   if (normalized === TEACHER_PUSH_LATE_REASON) return 'lateReason';
-  if (normalized === TEACHER_PUSH_LATE_STATUS || normalized === TEACHER_PUSH_LEAVE_STATUS) {
+  if (
+    normalized === TEACHER_PUSH_LATE_STATUS
+    || normalized === TEACHER_PUSH_LEAVE_STATUS
+    || normalized === TEACHER_PUSH_PAYROLL_LOP
+  ) {
     return 'notice';
   }
   return null;

@@ -25,9 +25,21 @@ export default StyleSheet.create({
     borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   iconWrapActive: {
     backgroundColor: colors.primarySoft,
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 2,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.error,
+    borderWidth: 1,
+    borderColor: colors.surface,
   },
   label: {
     width: '100%',

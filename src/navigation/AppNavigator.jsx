@@ -22,6 +22,7 @@ import {
 import { stopDriverVanGpsPublishing } from '../features/settings/frontend/services/driverVanLocationPublisher';
 import { stopBlePhoneScan } from '../features/settings/frontend/services/blePhoneScannerService';
 import TeacherLeaveNavigator from '../features/teacherapp/navigation/TeacherLeaveNavigator';
+import OwnerNavigator from '../features/ownerapp/navigation/OwnerNavigator';
 import {
   clearTeacherSession,
   loadTeacherSession,
@@ -38,6 +39,7 @@ import {
   teacherPushTargetFromNotificationContent,
 } from '../features/teacherapp/push/teacherPushDeepLink';
 import { registerStaffFcmToken } from '../features/teacherapp/push/registerStaffFcmToken';
+import { clearOwnerDeviceToken, logoutOwner } from '../features/ownerapp/api/ownerApi';
 import { logoutDriver } from '../services/loginApi';
 import { colors } from '../theme/colors';
 import AuthNavigator from './AuthNavigator';
@@ -91,9 +93,10 @@ function PermissionAskGate({ message }) {
   );
 }
 
-/** Pick shell: drivers default Trip; others Leave. Respect saved preferredMode. */
+/** Pick shell: Owner role always gets the approval shell; drivers default Trip; others Leave. */
 function resolveShell(page) {
   if (!page) return 'auth';
+  if (String(page.role || '').toUpperCase() === 'OWNER') return 'owner';
   if (page.preferredMode === 'TRIP' && page.canTrip) return 'trip';
   if (page.preferredMode === 'LEAVE' && page.canLeave) return 'leave';
   if (page.canTrip) return 'trip';
@@ -329,6 +332,26 @@ export default function AppNavigator() {
     } catch {
       // Why: still clear local session
     }
+    try {
+      if (verifiedPage?.ownerToken) {
+        // Why: same Option 1 pattern as teacher — soft-delete this phone row on teacher_app_device
+        let fcmToken = null;
+        try {
+          const device = await Notifications.getDevicePushTokenAsync();
+          fcmToken = device?.data ? String(device.data) : null;
+        } catch {
+          // Why: still clear by owner id if token read fails
+        }
+        await clearOwnerDeviceToken(verifiedPage.ownerToken, fcmToken);
+      }
+    } catch {
+      // Why: still continue logout if clear API fails
+    }
+    try {
+      if (verifiedPage?.ownerToken) await logoutOwner(verifiedPage.ownerToken);
+    } catch {
+      // Why: still clear local session
+    }
     stopBlePhoneScan();
     stopDriverVanGpsPublishing();
     await clearDriverDeviceSetupComplete();
@@ -343,6 +366,17 @@ export default function AppNavigator() {
 
   if (bootstrapping) {
     return <PermissionAskGate message="Starting…" />;
+  }
+
+  if (isAuthenticated && shell === 'owner') {
+    return (
+      <OwnerNavigator
+        ownerToken={verifiedPage?.ownerToken}
+        ownerName={verifiedPage?.driverName}
+        phone={phone || verifiedPage?.phone}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   // Why: Trip must never stay on the BLE spinner — gate unlocks before Trip shell

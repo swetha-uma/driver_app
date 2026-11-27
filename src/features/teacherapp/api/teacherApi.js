@@ -77,9 +77,17 @@ export function createTeacherLeaveRequest(teacherToken, body) {
   return teacherPost('/api/v1/teacher-app/leave/requests', teacherToken, body);
 }
 
-/** Pending late reason for today. */
-export function fetchTeacherLatePending(teacherToken) {
-  return teacherGet('/api/v1/teacher-app/late/pending', teacherToken);
+/** Late reason for one day (default today — Home flow). */
+export function fetchTeacherLatePending(teacherToken, attendanceDate) {
+  const q = attendanceDate
+    ? `?date=${encodeURIComponent(String(attendanceDate).slice(0, 10))}`
+    : '';
+  return teacherGet(`/api/v1/teacher-app/late/pending${q}`, teacherToken);
+}
+
+/** All late days inside validity window for Notice. */
+export function fetchTeacherLateNotices(teacherToken) {
+  return teacherGet('/api/v1/teacher-app/late/notices', teacherToken);
 }
 
 /** Submit late reason (locks after submit). */
@@ -100,6 +108,11 @@ export function clearTeacherDeviceToken(teacherToken, fcmToken) {
 /** PENDING action-required inbox rows for in-app ack dialog (no FCM tap needed). */
 export function fetchTeacherPendingNotificationAcks(teacherToken) {
   return teacherGet('/api/v1/teacher-app/notifications/pending-ack', teacherToken);
+}
+
+/** Notice hub history — payroll LOP / late / leave status (kept after Mark as read). */
+export function fetchTeacherNotificationInbox(teacherToken) {
+  return teacherGet('/api/v1/teacher-app/notifications/inbox', teacherToken);
 }
 
 /** Mark inbox notification as read — stop further reminders. */

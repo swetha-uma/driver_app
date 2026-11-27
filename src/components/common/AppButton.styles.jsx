@@ -38,6 +38,22 @@ export default StyleSheet.create({
   outlinePressed: {
     backgroundColor: colors.primarySoft,
   },
+  danger: {
+    backgroundColor: colors.error,
+    shadowColor: colors.error,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  dangerPressed: {
+    backgroundColor: colors.errorText,
+  },
+  dangerDisabled: {
+    backgroundColor: colors.errorBg,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   soft: {
     backgroundColor: colors.primarySoft,
   },

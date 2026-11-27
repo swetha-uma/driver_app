@@ -151,9 +151,9 @@ export default function RequestLeaveScreen({ teacherToken, navigation }) {
   const today = useMemo(() => startOfToday(), []);
   const todayIso = useMemo(() => toIso(today), [today]);
 
-  const [types, setTypes] = useState(FALLBACK_TYPES);
+  const [types, setTypes] = useState([]);
   const [balances, setBalances] = useState([]);
-  const [leaveTypeId, setLeaveTypeId] = useState(FALLBACK_TYPES[0].id);
+  const [leaveTypeId, setLeaveTypeId] = useState(null);
   const [fromDate, setFromDate] = useState(todayIso);
   const [toDate, setToDate] = useState(todayIso);
   const [dayMode, setDayMode] = useState('FULL'); // FULL | HALF
@@ -172,11 +172,16 @@ export default function RequestLeaveScreen({ teacherToken, navigation }) {
           fetchTeacherLeaveTypes(teacherToken),
           fetchTeacherLeaveBalances(teacherToken),
         ]);
-        if (t?.length) {
-          setTypes(t);
-          setLeaveTypeId(t[0].id);
-        }
-        setBalances(b || []);
+        const balList = b || [];
+        setBalances(balList);
+        // Why: hide leave types with no remaining days (same rule as web create request).
+        const closingByType = new Map(
+          balList.map((row) => [row.leaveTypeId, Number(row.closing) || 0]),
+        );
+        const source = t?.length ? t : FALLBACK_TYPES;
+        const usable = source.filter((type) => (closingByType.get(type.id) ?? 0) > 0);
+        setTypes(usable);
+        setLeaveTypeId(usable[0]?.id ?? null);
       } catch (e) {
         setError(e.message || 'Could not load leave types');
       }
@@ -206,6 +211,10 @@ export default function RequestLeaveScreen({ teacherToken, navigation }) {
   }
 
   async function submit() {
+    if (!leaveTypeId) {
+      setError('No leave type with remaining days. Contact admin to set leave balance.');
+      return;
+    }
     if (!fromDate || !toDate) {
       setError('Please pick from and to dates');
       return;
@@ -256,22 +265,30 @@ export default function RequestLeaveScreen({ teacherToken, navigation }) {
       <AppText variant="caption" color={colors.textSecondary} style={styles.label}>
         Leave type
       </AppText>
-      <View style={styles.row}>
-        {types.map((t) => {
-          const on = leaveTypeId === t.id;
-          return (
-            <Pressable
-              key={t.id}
-              style={[styles.typeChip, on && styles.typeChipOn]}
-              onPress={() => setLeaveTypeId(t.id)}
-            >
-              <AppText variant="body" color={on ? colors.white : colors.textPrimary} style={styles.chipText}>
-                {t.name}
-              </AppText>
-            </Pressable>
-          );
-        })}
-      </View>
+      {types.length === 0 ? (
+        <AppText variant="body" color={colors.textSecondary} style={{ marginBottom: spacing.sm }}>
+          No leave types with remaining days. Ask admin to set your leave balance.
+        </AppText>
+      ) : (
+        <View style={styles.row}>
+          {types.map((t) => {
+            const on = leaveTypeId === t.id;
+            const left = balances.find((b) => b.leaveTypeId === t.id)?.closing;
+            return (
+              <Pressable
+                key={t.id}
+                style={[styles.typeChip, on && styles.typeChipOn]}
+                onPress={() => setLeaveTypeId(t.id)}
+              >
+                <AppText variant="body" color={on ? colors.white : colors.textPrimary} style={styles.chipText}>
+                  {t.name}
+                  {left != null ? ` (${left})` : ''}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
 
       {balances.length ? (
         <>
@@ -384,8 +401,8 @@ export default function RequestLeaveScreen({ teacherToken, navigation }) {
       ) : null}
 
       <Pressable
-        style={[styles.submitBtn, saving && styles.submitBtnDisabled]}
-        disabled={saving}
+        style={[styles.submitBtn, (saving || !leaveTypeId) && styles.submitBtnDisabled]}
+        disabled={saving || !leaveTypeId}
         onPress={submit}
       >
         <AppText variant="button" color={colors.white} style={styles.submitText}>

@@ -15,6 +15,7 @@ export default function LateReasonScreen({ // KAN-28 | Teacher App Module Requir
   teacherToken,
   staffName,
   designation,
+  attendanceDate,
   onBack,
   onSubmitted,
   navigation,
@@ -35,10 +36,12 @@ export default function LateReasonScreen({ // KAN-28 | Teacher App Module Requir
     (async () => {
       setLoading(true);
       try {
-        const data = await fetchTeacherLatePending(teacherToken);
+        // Why: Notice passes a specific day; Home omits date → today only
+        const data = await fetchTeacherLatePending(teacherToken, attendanceDate || undefined);
         if (cancelled) return;
         setPending(data);
         if (data?.existingReason) setReason(data.existingReason);
+        else setReason('');
       } catch (e) {
         if (!cancelled) setError(e.message || 'Could not load late status');
       } finally {
@@ -48,7 +51,7 @@ export default function LateReasonScreen({ // KAN-28 | Teacher App Module Requir
     return () => {
       cancelled = true;
     };
-  }, [teacherToken]);
+  }, [teacherToken, attendanceDate]);
 
   async function submit() {
     if (!pending?.attendanceDate) return;
@@ -119,7 +122,9 @@ export default function LateReasonScreen({ // KAN-28 | Teacher App Module Requir
         <View style={styles.card}>
           <AppText variant="title">No pending late reason</AppText>
           <AppText variant="body" color={colors.textSecondary}>
-            You are not marked late today, or the reason is already submitted.
+            {attendanceDate
+              ? 'No open late reason for this day, or it is already submitted.'
+              : 'You are not marked late today, or the reason is already submitted.'}
           </AppText>
         </View>
       ) : (

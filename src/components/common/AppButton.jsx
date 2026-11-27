@@ -40,7 +40,8 @@ export default function AppButton({
     }).start();
   };
 
-  const textColor = isPrimary ? colors.white : colors.primary;
+  const isDanger = variant === 'danger';
+  const textColor = isPrimary || isDanger ? colors.white : colors.primary;
 
   return (
     <Animated.View style={[style, { transform: [{ scale }] }]}>
@@ -63,6 +64,9 @@ export default function AppButton({
           variant === 'outline' && pressed && styles.outlinePressed,
           variant === 'soft' && styles.soft,
           variant === 'soft' && pressed && styles.softPressed,
+          isDanger && !disabled && styles.danger,
+          isDanger && !disabled && pressed && styles.dangerPressed,
+          isDanger && disabled && styles.dangerDisabled,
         ]}
       >
         {({ pressed }) => (

@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import KeyboardAvoidingContainer from '../../../components/layout/KeyboardAvoidingContainer';
 import ScreenContainer from '../../../components/layout/ScreenContainer';
 import { MOBILE_LENGTH } from '../../../constants/auth';
-import { sendDriverLoginCode } from '../../../services/loginApi';
+import { sendLoginCode } from '../../../services/unifiedLoginApi';
 import { colors } from '../../../theme/colors';
 import AuthHero from '../components/AuthHero';
 import sheetStyles from '../components/AuthSheet.styles';
@@ -39,8 +39,8 @@ export default function LoginScreen({ initialMobileNumber = '', onOtpRequested, 
     setSendError('');
     setSending(true);
     try {
-      const secondsUntilResend = await sendDriverLoginCode(mobileNumber);
-      onOtpRequested?.(mobileNumber, secondsUntilResend);
+      const { secondsUntilResend, mode } = await sendLoginCode(mobileNumber);
+      onOtpRequested?.(mobileNumber, secondsUntilResend, mode);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : 'Could not send the code');
     } finally {

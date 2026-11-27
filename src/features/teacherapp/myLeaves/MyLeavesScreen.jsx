@@ -4,7 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import AppText from '../../../components/common/AppText';
-import { fetchTeacherLatePending, fetchTeacherLeaveRequests } from '../api/teacherApi';
+import {
+  fetchTeacherLateNotices,
+  fetchTeacherLeaveRequests,
+  fetchTeacherNotificationInbox,
+} from '../api/teacherApi';
 import { formatLateDuration } from '../utils/formatLateDuration';
 import { colors } from '../../../theme/colors';
 import { radii, shadows } from '../../../theme/theme';
@@ -12,6 +16,7 @@ import { spacing } from '../../../theme/spacing';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
+  { id: 'payroll', label: 'Payroll' },
   { id: 'late', label: 'Late reason' },
   { id: 'approved', label: 'Approved' },
   { id: 'request', label: 'Leave request' },
@@ -25,6 +30,9 @@ const STATUS_TONE = {
   REJECTED: { bg: colors.errorBg, text: colors.errorText, label: 'Rejected' },
   SUBMITTED: { bg: colors.infoBg, text: colors.infoText, label: 'Submitted' },
   CANCELLED: { bg: colors.neutralBg, text: colors.neutralText, label: 'Cancelled' },
+  PAYROLL: { bg: colors.infoBg, text: colors.infoText, label: 'Payroll' },
+  INFO: { bg: colors.infoBg, text: colors.infoText, label: 'Update' },
+  READ: { bg: colors.neutralBg, text: colors.neutralText, label: 'Read' },
 };
 
 function formatDay(iso) { // KAN-28 | Teacher App Module Requirement | Created by Swetha on 18 Nov 2026 | Staff late reason, leave, push ack dialog, and payroll late/leave review.
@@ -70,49 +78,98 @@ function noticeSortKey(item) {
   return `${stamp}|${idPart}`;
 }
 
-/** Build notice rows from this staff member's leave + late APIs only. */
-function buildNoticeItems(leaveRequests, latePending) {
+function lateSubtitle(late) {
+  if (late?.entryTime) {
+    const duration = formatLateDuration(late.lateMinutes);
+    return `Entered ${late.entryTime}${duration ? ` · Late by ${duration}` : ''}`;
+  }
+  return late?.pending ? 'Please submit why you were late' : 'Submitted';
+}
+
+function inboxFilter(type) {
+  const t = String(type || '').toUpperCase();
+  if (t === 'PAYROLL_LOP') return 'payroll';
+  if (t === 'LATE_STATUS') return 'late';
+  if (t === 'LEAVE_STATUS') return 'request';
+  return 'payroll';
+}
+
+function inboxStatus(row) {
+  const t = String(row?.type || '').toUpperCase();
+  const s = String(row?.status || '').toUpperCase();
+  if (t === 'PAYROLL_LOP') return s === 'READ' ? 'READ' : 'PAYROLL';
+  if (s === 'READ') return 'READ';
+  return 'INFO';
+}
+
+function inboxSubtitle(row) {
+  const t = String(row?.type || '').toUpperCase();
+  if (t === 'PAYROLL_LOP') {
+    return String(row?.status || '').toUpperCase() === 'READ'
+      ? 'Payroll update · tap to view anytime'
+      : 'Payroll LOP / leave update';
+  }
+  if (t === 'LATE_STATUS') return 'Late review update';
+  if (t === 'LEAVE_STATUS') return 'Leave status update';
+  return 'Notification';
+}
+
+function firstBodyLine(body) {
+  const text = String(body || '').replace(/\r\n/g, '\n').trim();
+  if (!text) return '';
+  const line = text.split('\n').map((l) => l.trim()).find(Boolean);
+  return line || '';
+}
+
+function payrollReviewBody(body) {
+  const lines = String(body || '').replace(/\r\n/g, '\n').trim().split('\n').map((line) => line.trim()).filter(Boolean);
+  // Remove leave-balance before/after figures (for example 1 → 0) from teacher review.
+  return lines.map((line) => line.replace(/\s*\(\s*\d+(?:\.\d+)?\s*→\s*\d+(?:\.\d+)?\s*\)/g, '')).join('\n');
+}
+
+/** Build notice rows from leave + late + push inbox (payroll LOP kept after Mark as read). */
+function buildNoticeItems(leaveRequests, lateNotices, inboxRows) {
   const items = [];
 
-  if (latePending?.pending) {
+  // Why: PAYROLL_LOP / status pushes stay on Notice so staff can reopen details anytime
+  (inboxRows || []).forEach((row) => {
+    if (!row?.notificationId) return;
+    const type = String(row.type || '').toUpperCase();
     items.push({
-      id: `late-pending-${latePending.attendanceDate || 'today'}`,
-      kind: 'late',
-      filter: 'late',
-      title: 'Late reason pending',
-      subtitle: latePending.entryTime
-        ? `Entered ${latePending.entryTime}${
-            formatLateDuration(latePending.lateMinutes)
-              ? ` · Late by ${formatLateDuration(latePending.lateMinutes)}`
-              : ''
-          }`
-        : 'Please submit why you were late',
-      body: '',
-      status: 'PENDING',
-      date: latePending.attendanceDate || '',
-      sortAt: latePending.attendanceDate || new Date().toISOString(),
-      openLate: true,
-    });
-  } else if (latePending?.existingReason && latePending?.attendanceDate) {
-    items.push({
-      id: `late-done-${latePending.attendanceDate}`,
-      kind: 'late',
-      filter: 'late',
-      title: `Late reason — ${formatDay(latePending.attendanceDate)}`,
-      subtitle: latePending.entryTime
-        ? `Entered ${latePending.entryTime}${
-            formatLateDuration(latePending.lateMinutes)
-              ? ` · Late by ${formatLateDuration(latePending.lateMinutes)}`
-              : ''
-          }`
-        : 'Submitted',
-      body: latePending.existingReason,
-      status: 'SUBMITTED',
-      date: latePending.attendanceDate,
-      sortAt: latePending.attendanceDate,
+      id: `inbox-${row.notificationId}`,
+      kind: 'inbox',
+      filter: inboxFilter(type),
+      title: row.title || 'Notification',
+      subtitle: firstBodyLine(row.body) || inboxSubtitle(row),
+      body: type === 'PAYROLL_LOP' ? payrollReviewBody(row.body) : (row.body || ''),
+      status: inboxStatus(row),
+      date: (row.createdAt || '').slice(0, 10),
+      sortAt: row.createdAt || row.readAt || '',
       openLate: false,
+      inboxType: type,
     });
-  }
+  });
+
+  // Why: Notice lists every late day in the validity window (not Home today-only)
+  (lateNotices || []).forEach((late) => {
+    if (!late?.attendanceDate) return;
+    const pending = Boolean(late.pending);
+    items.push({
+      id: `late-${pending ? 'pending' : 'done'}-${late.attendanceDate}`,
+      kind: 'late',
+      filter: 'late',
+      title: pending
+        ? `Late reason pending — ${formatDay(late.attendanceDate)}`
+        : `Late reason — ${formatDay(late.attendanceDate)}`,
+      subtitle: lateSubtitle(late),
+      body: late.existingReason || '',
+      status: pending ? 'PENDING' : 'SUBMITTED',
+      date: late.attendanceDate,
+      sortAt: late.attendanceDate,
+      openLate: pending,
+      attendanceDate: late.attendanceDate,
+    });
+  });
 
   (leaveRequests || []).forEach((req) => {
     items.push({
@@ -185,18 +242,23 @@ function LeaveMessageDetail({ item, staffName, designation, onBack, onOpenLate }
             {tone.label}
           </AppText>
         </View>
-        <AppText variant="heading" style={styles.detailTitle}>
+        <AppText variant="heading" style={[styles.detailTitle, item.kind === 'inbox' && item.inboxType === 'PAYROLL_LOP' && styles.payrollDetailTitle]}>
           {item.title}
         </AppText>
-        <AppText variant="body" color={colors.textSecondary}>
-          {item.subtitle}
-        </AppText>
+        {item.kind === 'inbox' && item.inboxType === 'PAYROLL_LOP' ? (
+          <View style={styles.payrollGeneratedHighlight}>
+            <AppText variant="body" style={styles.payrollGeneratedText}>{firstBodyLine(item.body) || item.subtitle}</AppText>
+          </View>
+        ) : (
+          <AppText variant="body" color={colors.textSecondary}>{item.subtitle}</AppText>
+        )}
         <AppText variant="caption" color={colors.textSecondary} style={{ marginTop: spacing.xs }}>
           {item.date}
         </AppText>
         <View style={styles.messageBox}>
-          <AppText variant="subtitle" style={styles.messageText}>
-            {item.body || (item.openLate ? 'Tap below to submit your late reason.' : 'No description added.')}
+        <AppText variant="body" style={styles.messageText}>
+            {item.body
+              || (item.openLate ? 'Tap below to submit your late reason.' : 'No description added.')}
           </AppText>
         </View>
         {item.openLate ? (
@@ -228,11 +290,18 @@ export default function MyLeavesScreen({ teacherToken, staffName, designation, n
     setLoading(true);
     setError('');
     try {
-      const [leaves, late] = await Promise.all([
+      const [leaves, lates, inbox] = await Promise.all([
         fetchTeacherLeaveRequests(teacherToken).catch(() => []),
-        fetchTeacherLatePending(teacherToken).catch(() => null),
+        fetchTeacherLateNotices(teacherToken).catch(() => []),
+        fetchTeacherNotificationInbox(teacherToken).catch(() => []),
       ]);
-      setItems(buildNoticeItems(Array.isArray(leaves) ? leaves : [], late));
+      setItems(
+        buildNoticeItems(
+          Array.isArray(leaves) ? leaves : [],
+          Array.isArray(lates) ? lates : [],
+          Array.isArray(inbox) ? inbox : [],
+        ),
+      );
     } catch (e) {
       setError(e.message || 'Could not load notices');
       setItems([]);
@@ -258,8 +327,9 @@ export default function MyLeavesScreen({ teacherToken, staffName, designation, n
         designation={designation}
         onBack={() => setSelected(null)}
         onOpenLate={() => {
+          const date = selected?.attendanceDate;
           setSelected(null);
-          navigation.navigate('LateReason');
+          navigation.navigate('LateReason', { attendanceDate: date });
         }}
       />
     );
@@ -344,35 +414,38 @@ export default function MyLeavesScreen({ teacherToken, staffName, designation, n
               style={styles.card}
               onPress={() => {
                 if (item.openLate) {
-                  navigation.navigate('LateReason');
+                  navigation.navigate('LateReason', { attendanceDate: item.attendanceDate });
                   return;
                 }
                 if (item.kind === 'leave' && item.leaveId) {
                   navigation.navigate('LeaveDetail', { id: item.leaveId });
                   return;
                 }
+                // Why: inbox (PAYROLL_LOP) + late submitted open detail anytime
                 setSelected(item);
               }}
             >
               <View style={styles.cardIcon}>
                 <Ionicons
                   name={
-                    item.filter === 'late'
-                      ? 'time'
-                      : item.filter === 'approved'
-                        ? 'checkmark-circle'
-                        : item.filter === 'rejected'
-                          ? 'close-circle'
-                          : item.filter === 'cancelled'
-                            ? 'ban'
-                            : 'document-text'
+                    item.filter === 'payroll' || item.kind === 'inbox'
+                      ? 'cash-outline'
+                      : item.filter === 'late'
+                        ? 'time'
+                        : item.filter === 'approved'
+                          ? 'checkmark-circle'
+                          : item.filter === 'rejected'
+                            ? 'close-circle'
+                            : item.filter === 'cancelled'
+                              ? 'ban'
+                              : 'document-text'
                   }
                   size={22}
                   color={colors.primary}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <AppText variant="body" style={{ fontWeight: '700' }}>
+                <AppText variant="body" style={styles.noticeTitle}>
                   {item.title}
                 </AppText>
                 <AppText variant="caption" color={colors.textSecondary}>
@@ -491,6 +564,16 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   detailTitle: { color: colors.textPrimary },
+  payrollDetailTitle: { fontWeight: '400' },
+  payrollGeneratedHighlight: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.infoBg,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  payrollGeneratedText: { fontWeight: '400', color: colors.textPrimary },
+  noticeTitle: { fontWeight: '400' },
   messageBox: {
     marginTop: spacing.sm,
     padding: spacing.md,

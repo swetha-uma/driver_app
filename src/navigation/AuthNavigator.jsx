@@ -8,6 +8,7 @@ import ServerSettingsScreen from '../features/settings/ServerSettingsScreen';
 export default function AuthNavigator({ onAuthenticated }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [mobileNumber, setMobileNumber] = useState('');
   const [resendWaitSeconds, setResendWaitSeconds] = useState(60);
+  const [loginMode, setLoginMode] = useState('driver');
   const [step, setStep] = useState('login');
 
   if (step === 'server') {
@@ -19,6 +20,7 @@ export default function AuthNavigator({ onAuthenticated }) { // KAN-27 | Driver 
       <OtpScreen
         mobileNumber={mobileNumber}
         resendWaitSeconds={resendWaitSeconds}
+        loginMode={loginMode}
         onChangeNumber={() => setStep('login')}
         onVerified={(page) => onAuthenticated(mobileNumber, page)}
       />
@@ -29,9 +31,10 @@ export default function AuthNavigator({ onAuthenticated }) { // KAN-27 | Driver 
     <LoginScreen
       initialMobileNumber={mobileNumber}
       onOpenServer={() => setStep('server')}
-      onOtpRequested={(number, secondsUntilResend) => {
+      onOtpRequested={(number, secondsUntilResend, mode) => {
         setMobileNumber(number);
         setResendWaitSeconds(secondsUntilResend);
+        setLoginMode(mode || 'driver');
         setStep('otp');
       }}
     />

@@ -30,7 +30,7 @@ function renderBoldHighlightText(text, baseStyle) {
       );
     }
     parts.push(
-      <Text key={`b-${key++}`} style={[baseStyle, styles.boldPhrase]}>
+          <Text key={`b-${key++}`} style={baseStyle}>
         {match[0]}
       </Text>,
     );
@@ -86,15 +86,15 @@ export default function TeacherNotificationAckDialog({ // KAN-28 | Teacher App M
 
   async function onMarkRead() {
     if (!teacherToken || !notification.notificationId) {
-      onDone?.();
+      onDone?.({ markedRead: true, notificationId: notification?.notificationId });
       return;
     }
     setBusy(true);
     setError('');
     try {
-      // Why: stop job from resending this inbox row
+      // Why: stop job + popup for this inbox row (late / leave / LOP — all types)
       await markTeacherNotificationRead(teacherToken, notification.notificationId);
-      onDone?.();
+      onDone?.({ markedRead: true, notificationId: notification.notificationId });
     } catch (e) {
       setError(e?.message || 'Could not mark as read');
     } finally {
@@ -104,7 +104,7 @@ export default function TeacherNotificationAckDialog({ // KAN-28 | Teacher App M
 
   async function onRemindLater() {
     if (!teacherToken || !notification.notificationId) {
-      onDone?.();
+      onDone?.({ markedRead: false, notificationId: notification?.notificationId });
       return;
     }
     setBusy(true);
@@ -112,7 +112,7 @@ export default function TeacherNotificationAckDialog({ // KAN-28 | Teacher App M
     try {
       // Why: schedule next FCM from teacher_app_device interval minutes
       await remindTeacherNotificationLater(teacherToken, notification.notificationId);
-      onDone?.();
+      onDone?.({ markedRead: false, notificationId: notification.notificationId });
     } catch (e) {
       setError(e?.message || 'Could not set reminder');
     } finally {
@@ -202,11 +202,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  boldPhrase: {
-    fontWeight: '800',
-    color: colors.textPrimary,
   },
   error: {
     marginTop: spacing.sm,

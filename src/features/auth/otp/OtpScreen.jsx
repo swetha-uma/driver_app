@@ -6,7 +6,7 @@ import AppText from '../../../components/common/AppText';
 import KeyboardAvoidingContainer from '../../../components/layout/KeyboardAvoidingContainer';
 import ScreenContainer from '../../../components/layout/ScreenContainer';
 import { OTP_LENGTH } from '../../../constants/auth';
-import { sendDriverLoginCode, verifyDriverLoginCode } from '../../../services/loginApi';
+import { resendLoginCode, verifyLoginCode } from '../../../services/unifiedLoginApi';
 import { colors } from '../../../theme/colors';
 import { maskMobileNumber } from '../../../utils/formatPhone';
 import AuthHero from '../components/AuthHero';
@@ -17,7 +17,7 @@ import VerifiedMark from './VerifiedMark';
 import styles from './OtpScreen.styles';
 
 /** Checks the 4-digit code and opens the next screen when accepted. */
-export default function OtpScreen({ mobileNumber, resendWaitSeconds = 60, onChangeNumber, onVerified }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
+export default function OtpScreen({ mobileNumber, resendWaitSeconds = 60, loginMode = 'driver', onChangeNumber, onVerified }) { // KAN-27 | Driver App Module Requirement | Created by Swetha on 18 Nov 2026 | Trip, schedule, van attendance, BLE gateway, and driver home.
   const [code, setCode] = useState('');
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -48,7 +48,7 @@ export default function OtpScreen({ mobileNumber, resendWaitSeconds = 60, onChan
     setError('');
     setVerifying(true);
     try {
-      const page = await verifyDriverLoginCode(mobileNumber, digits);
+      const page = await verifyLoginCode(mobileNumber, digits, loginMode);
       setVerifiedPage(page);
       setVerified(true);
     } catch (err) {
@@ -58,7 +58,7 @@ export default function OtpScreen({ mobileNumber, resendWaitSeconds = 60, onChan
     }
   };
 
-  const handleResend = () => sendDriverLoginCode(mobileNumber);
+  const handleResend = () => resendLoginCode(mobileNumber, loginMode);
 
   return (
     <ScreenContainer style={sheetStyles.screen}>

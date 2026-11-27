@@ -7,7 +7,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/9b29622e-b101-4c32-aef8-600f669a12ff"
+      "url": "https://u.expo.dev/cac76295-8b1c-4469-844c-eea5e21e5412"
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -80,11 +80,11 @@
       ],
       "./plugins/withCleartextTraffic.js"
     ],
+    "owner": "thamayanth",
     "extra": {
       "eas": {
-        "projectId": "9b29622e-b101-4c32-aef8-600f669a12ff"
+        "projectId": "cac76295-8b1c-4469-844c-eea5e21e5412"
       }
-    },
-    "owner": "infinitevision"
+    }
   }
 }

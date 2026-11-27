@@ -1,10 +1,45 @@
-import { Pressable, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import AppText from '../common/AppText';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import styles from './BottomTabBar.styles';
+
+/** Bell wiggle while unread — stops once badges clear. */
+function ShakingIcon({ shouldShake, children }) {
+  const rotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!shouldShake) {
+      rotation.setValue(0);
+      return undefined;
+    }
+    const wiggle = Animated.loop(
+      Animated.sequence([
+        Animated.timing(rotation, { toValue: 1, duration: 80, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: -1, duration: 80, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: 1, duration: 80, useNativeDriver: true }),
+        Animated.timing(rotation, { toValue: 0, duration: 80, useNativeDriver: true }),
+        Animated.delay(2500),
+      ]),
+    );
+    wiggle.start();
+    return () => wiggle.stop();
+  }, [shouldShake, rotation]);
+
+  const rotate = rotation.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: ['-18deg', '0deg', '18deg'],
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      {children}
+    </Animated.View>
+  );
+}
 
 const ICONS = {
   home: ['home', 'home-outline'],
@@ -17,6 +52,10 @@ const ICONS = {
   leaves: ['documents', 'documents-outline'],
   notice: ['notifications', 'notifications-outline'],
   more: ['menu', 'menu-outline'],
+  // Why: Owner-mode tabs (approval shell)
+  leave: ['document-text', 'document-text-outline'],
+  salary: ['cash', 'cash-outline'],
+  scholarship: ['school', 'school-outline'],
 };
 
 /**
@@ -29,6 +68,8 @@ export default function BottomTabBar({
   onChange,
   bottomInset = 0,
   tabsLocked = false,
+  // Why: { notice: true } -> red dot + bell shake until that notice is opened/read
+  unreadTabs = {},
 }) {
   return (
     <View style={[styles.bar, { paddingBottom: spacing.sm + bottomInset }]}>
@@ -43,6 +84,7 @@ export default function BottomTabBar({
           : active
             ? colors.primary
             : colors.textSecondary;
+        const hasUnread = Boolean(unreadTabs[tab.id]) && !disabled;
 
         return (
           <Pressable
@@ -60,11 +102,14 @@ export default function BottomTabBar({
             style={[styles.tab, disabled && styles.tabDisabled]}
           >
             <View style={[styles.iconWrap, active && !disabled && styles.iconWrapActive]}>
-              <Ionicons
-                name={active ? filled : outline}
-                size={20}
-                color={iconColor}
-              />
+              <ShakingIcon shouldShake={hasUnread}>
+                <Ionicons
+                  name={active ? filled : outline}
+                  size={20}
+                  color={iconColor}
+                />
+              </ShakingIcon>
+              {hasUnread ? <View style={styles.unreadDot} /> : null}
             </View>
             <AppText
               variant="tab"
