@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
@@ -13,6 +14,7 @@ import OwnerNoticesScreen from '../notices/OwnerNoticesScreen';
 import OwnerMoreScreen from '../more/OwnerMoreScreen';
 import { colors } from '../../../theme/colors';
 import styles from '../../../navigation/MainNavigator.styles';
+import { ownerPushTargetFromNotificationContent } from '../push/ownerPushDeepLink';
 
 const OWNER_TABS = [
   { id: 'home', label: 'Home' },
@@ -27,10 +29,39 @@ const OWNER_TABS = [
 export default function OwnerNavigator({ ownerToken, ownerName, phone, onLogout }) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState('home');
+  const [pushTarget, setPushTarget] = useState(null);
+  const handledResponseIds = useRef(new Set());
+  const coldStartChecked = useRef(false);
 
   useEffect(() => {
     registerOwnerFcmToken(ownerToken).catch(() => undefined);
   }, [ownerToken]);
+
+  useEffect(() => {
+    const handleResponse = (response) => {
+      const notification = response?.notification;
+      const key = String(notification?.request?.identifier || `${notification?.date || ''}:${JSON.stringify(notification?.request?.content?.data || {})}`);
+      if (handledResponseIds.current.has(key)) return;
+      handledResponseIds.current.add(key);
+
+      const target = ownerPushTargetFromNotificationContent(notification?.request?.content);
+      if (!target) return;
+      setPushTarget(target);
+      setTab(target.tab);
+      if (typeof Notifications.clearLastNotificationResponseAsync === 'function') {
+        Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+      }
+    };
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    if (!coldStartChecked.current) {
+      coldStartChecked.current = true;
+      Notifications.getLastNotificationResponseAsync()
+        .then((response) => { if (response) handleResponse(response); })
+        .catch(() => undefined);
+    }
+    return () => subscription.remove();
+  }, []);
 
   return (
     <View style={styles.fill}>
@@ -38,16 +69,16 @@ export default function OwnerNavigator({ ownerToken, ownerName, phone, onLogout 
       <View style={[styles.column, { paddingTop: insets.top }]}>
         <View style={styles.body}>
           {tab === 'home' ? (
-            <OwnerHomeScreen ownerToken={ownerToken} ownerName={ownerName} />
+            <OwnerHomeScreen ownerToken={ownerToken} ownerName={ownerName} onNavigateTab={setTab} />
           ) : null}
           {tab === 'leave' ? (
-            <LeaveLateApprovalScreen ownerToken={ownerToken} ownerName={ownerName} />
+            <LeaveLateApprovalScreen ownerToken={ownerToken} ownerName={ownerName} pushTarget={pushTarget} onPushTargetHandled={() => setPushTarget(null)} />
           ) : null}
           {tab === 'salary' ? (
-            <SalaryAdvanceApprovalScreen ownerToken={ownerToken} ownerName={ownerName} />
+            <SalaryAdvanceApprovalScreen ownerToken={ownerToken} ownerName={ownerName} pushTarget={pushTarget} onPushTargetHandled={() => setPushTarget(null)} />
           ) : null}
           {tab === 'scholarship' ? (
-            <ScholarshipApprovalScreen ownerToken={ownerToken} ownerName={ownerName} />
+            <ScholarshipApprovalScreen ownerToken={ownerToken} ownerName={ownerName} pushTarget={pushTarget} onPushTargetHandled={() => setPushTarget(null)} />
           ) : null}
           {tab === 'notice' ? (
             <OwnerNoticesScreen ownerToken={ownerToken} ownerName={ownerName} />

@@ -11,7 +11,7 @@ async function ownerGet(path, ownerToken) {
   return read(response);
 }
 
-/** POST JSON helper with owner token. */
+/** POST JSON helper with owner token. Success must include a data payload. */
 async function ownerPost(path, ownerToken, body) {
   const response = await fetch(`${getApiBase()}${path}`, {
     method: 'POST',
@@ -24,29 +24,59 @@ async function ownerPost(path, ownerToken, body) {
   return read(response);
 }
 
+/**
+ * POST whose success body has data=null (approve/reject return only a message).
+ * `read()` treats a null payload as failure, which left the buttons on screen
+ * after a decision that the server had already saved.
+ */
+async function ownerPostOk(path, ownerToken, requestBody) {
+  const response = await fetch(`${getApiBase()}${path}`, {
+    method: 'POST',
+    headers: {
+      ...(requestBody ? { 'Content-Type': 'application/json' } : {}),
+      [OWNER_TOKEN_HEADER]: ownerToken,
+    },
+    body: requestBody ? JSON.stringify(requestBody) : undefined,
+  });
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error(response.ok ? 'Invalid server response' : 'Could not reach the school server');
+  }
+  if (!response.ok || body.success === false) {
+    throw new Error(body.message || 'Request failed');
+  }
+  return body.data;
+}
+
 /** Pending + recent leave/late requests waiting for Owner action. */
 export function fetchOwnerLeaveRequests(ownerToken) {
   return ownerGet('/api/v1/owner-app/leave/requests', ownerToken);
 }
 
 export function approveOwnerLeaveRequest(ownerToken, id, remarks) {
-  return ownerPost(`/api/v1/owner-app/leave/requests/${id}/approve`, ownerToken, { remarks });
+  return ownerPostOk(`/api/v1/owner-app/leave/requests/${id}/approve`, ownerToken, { remarks });
 }
 
 export function rejectOwnerLeaveRequest(ownerToken, id, remarks) {
-  return ownerPost(`/api/v1/owner-app/leave/requests/${id}/reject`, ownerToken, { remarks });
+  return ownerPostOk(`/api/v1/owner-app/leave/requests/${id}/reject`, ownerToken, { remarks });
 }
 
 export function fetchOwnerLateRequests(ownerToken) {
   return ownerGet('/api/v1/owner-app/late/requests', ownerToken);
 }
 
+export function fetchOwnerTodayLate(ownerToken) {
+  return ownerGet('/api/v1/owner-app/late/today', ownerToken);
+}
+
 export function approveOwnerLateRequest(ownerToken, id, remarks) {
-  return ownerPost(`/api/v1/owner-app/late/requests/${id}/approve`, ownerToken, { remarks });
+  return ownerPostOk(`/api/v1/owner-app/late/requests/${id}/approve`, ownerToken, { remarks });
 }
 
 export function rejectOwnerLateRequest(ownerToken, id, remarks) {
-  return ownerPost(`/api/v1/owner-app/late/requests/${id}/reject`, ownerToken, { remarks });
+  return ownerPostOk(`/api/v1/owner-app/late/requests/${id}/reject`, ownerToken, { remarks });
 }
 
 /** Salary advance requests waiting for approval. */
@@ -55,11 +85,11 @@ export function fetchOwnerAdvanceRequests(ownerToken) {
 }
 
 export function approveOwnerAdvanceRequest(ownerToken, id) {
-  return ownerPost(`/api/v1/owner-app/payroll/advances/${id}/approve`, ownerToken);
+  return ownerPostOk(`/api/v1/owner-app/payroll/advances/${id}/approve`, ownerToken);
 }
 
 export function rejectOwnerAdvanceRequest(ownerToken, id, remarks) {
-  return ownerPost(`/api/v1/owner-app/payroll/advances/${id}/reject`, ownerToken, { remarks });
+  return ownerPostOk(`/api/v1/owner-app/payroll/advances/${id}/reject`, ownerToken, { remarks });
 }
 
 /** A staff/teacher's salary create/update requests waiting for owner approval. */
@@ -72,11 +102,11 @@ export function fetchOwnerSalaryStructureDetail(ownerToken, id) {
 }
 
 export function approveOwnerSalaryStructure(ownerToken, id) {
-  return ownerPost(`/api/v1/owner-app/payroll/salary-structures/${id}/approve`, ownerToken);
+  return ownerPostOk(`/api/v1/owner-app/payroll/salary-structures/${id}/approve`, ownerToken);
 }
 
 export function rejectOwnerSalaryStructure(ownerToken, id, remarks) {
-  return ownerPost(`/api/v1/owner-app/payroll/salary-structures/${id}/reject`, ownerToken, { remarks });
+  return ownerPostOk(`/api/v1/owner-app/payroll/salary-structures/${id}/reject`, ownerToken, { remarks });
 }
 
 /** Scholarship requests waiting for approval. */
@@ -85,11 +115,11 @@ export function fetchOwnerScholarshipRequests(ownerToken) {
 }
 
 export function approveOwnerScholarshipRequest(ownerToken, id) {
-  return ownerPost(`/api/v1/owner-app/scholarship-requests/${id}/approve`, ownerToken);
+  return ownerPostOk(`/api/v1/owner-app/scholarship-requests/${id}/approve`, ownerToken);
 }
 
 export function rejectOwnerScholarshipRequest(ownerToken, id, remarks) {
-  return ownerPost(`/api/v1/owner-app/scholarship-requests/${id}/reject`, ownerToken, { remarks });
+  return ownerPostOk(`/api/v1/owner-app/scholarship-requests/${id}/reject`, ownerToken, { remarks });
 }
 
 /** Notices inbox — leave/late/advance/scholarship requests created for Owner to act on. */
@@ -127,28 +157,6 @@ export function fetchOwnerSchools(ownerToken) {
 /** Switch the active school for this session (same token, new schoolId). */
 export function switchOwnerSchool(ownerToken, targetSchoolId) {
   return ownerPost('/api/v1/owner-app/schools/switch', ownerToken, { targetSchoolId });
-}
-
-/** POST with no body; success may have data=null. */
-async function ownerPostOk(path, ownerToken, requestBody) {
-  const response = await fetch(`${getApiBase()}${path}`, {
-    method: 'POST',
-    headers: {
-      ...(requestBody ? { 'Content-Type': 'application/json' } : {}),
-      [OWNER_TOKEN_HEADER]: ownerToken,
-    },
-    body: requestBody ? JSON.stringify(requestBody) : undefined,
-  });
-  let body;
-  try {
-    body = await response.json();
-  } catch {
-    throw new Error(response.ok ? 'Invalid server response' : 'Could not reach the school server');
-  }
-  if (!response.ok || body.success === false) {
-    throw new Error(body.message || 'Request failed');
-  }
-  return body.data;
 }
 
 /** Logout owner Redis session. */

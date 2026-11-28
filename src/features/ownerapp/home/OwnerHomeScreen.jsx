@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import AppText from '../../../components/common/AppText';
 import SchoolSwitcher from '../components/SchoolSwitcher';
+import TodayLateScreen from './TodayLateScreen';
 import {
   fetchOwnerAdvanceRequests,
   fetchOwnerLateRequests,
+  fetchOwnerTodayLate,
   fetchOwnerLeaveRequests,
   fetchOwnerSchools,
   fetchOwnerScholarshipRequests,
@@ -38,13 +40,15 @@ function countPending(list) {
 const homeCache = new Map();
 
 /** Owner Home — greeting + today's pending-approval counts, first tab before Leave/Late. */
-export default function OwnerHomeScreen({ ownerToken, ownerName }) {
+export default function OwnerHomeScreen({ ownerToken, ownerName, onNavigateTab }) {
   const cached = homeCache.get(ownerToken);
   const [counts, setCounts] = useState(
     cached?.counts ?? { leave: 0, late: 0, salary: 0, advance: 0, scholarship: 0 },
   );
   const [loading, setLoading] = useState(!cached);
   const [schools, setSchools] = useState(cached?.schools ?? []);
+  const [todayLate, setTodayLate] = useState(cached?.todayLate ?? []);
+  const [showTodayLate, setShowTodayLate] = useState(false);
 
   const load = useCallback(async () => {
     if (!ownerToken) {
@@ -56,13 +60,14 @@ export default function OwnerHomeScreen({ ownerToken, ownerName }) {
       setLoading(true);
     }
     try {
-      const [leaves, lates, advances, structures, scholarships, schoolList] = await Promise.all([
+      const [leaves, lates, advances, structures, scholarships, schoolList, todayLateRows] = await Promise.all([
         fetchOwnerLeaveRequests(ownerToken).catch(() => []),
         fetchOwnerLateRequests(ownerToken).catch(() => []),
         fetchOwnerAdvanceRequests(ownerToken).catch(() => []),
         fetchOwnerSalaryStructures(ownerToken).catch(() => []),
         fetchOwnerScholarshipRequests(ownerToken).catch(() => []),
         fetchOwnerSchools(ownerToken).catch(() => []),
+        fetchOwnerTodayLate(ownerToken).catch(() => []),
       ]);
       const nextCounts = {
         leave: countPending(leaves),
@@ -73,9 +78,11 @@ export default function OwnerHomeScreen({ ownerToken, ownerName }) {
         scholarship: countPending(scholarships),
       };
       const nextSchools = schoolList || [];
-      homeCache.set(ownerToken, { counts: nextCounts, schools: nextSchools });
+      const nextTodayLate = todayLateRows || [];
+      homeCache.set(ownerToken, { counts: nextCounts, schools: nextSchools, todayLate: nextTodayLate });
       setCounts(nextCounts);
       setSchools(nextSchools);
+      setTodayLate(nextTodayLate);
     } finally {
       setLoading(false);
     }
@@ -85,7 +92,14 @@ export default function OwnerHomeScreen({ ownerToken, ownerName }) {
     load();
   }, [load]);
 
-  const currentSchool = schools.find((s) => s.current);
+  useEffect(() => {
+    if (!showTodayLate) return undefined;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setShowTodayLate(false);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [showTodayLate]);
 
   const handleSwitchSchool = useCallback(
     async (schoolId) => {
@@ -98,6 +112,12 @@ export default function OwnerHomeScreen({ ownerToken, ownerName }) {
     },
     [ownerToken, load],
   );
+
+  if (showTodayLate) {
+    return <TodayLateScreen ownerName={ownerName} rows={todayLate} onBack={() => setShowTodayLate(false)} />;
+  }
+
+  const currentSchool = schools.find((s) => s.current);
 
   const cards = [
     {
@@ -141,6 +161,7 @@ export default function OwnerHomeScreen({ ownerToken, ownerName }) {
       label: 'Financial request pending',
       count: 0,
       color: colors.secondary,
+      mock: true,
     },
   ];
 
@@ -187,18 +208,47 @@ export default function OwnerHomeScreen({ ownerToken, ownerName }) {
       </AppText>
 
       <View style={styles.cardsWrap}>
-        {cards.map((card) => (
-          <View key={card.id} style={styles.statCard} pointerEvents="none">
-            <Ionicons name={card.icon} size={20} color={card.color} />
+        {cards.map((card) => {
+          const targetTab = card.id === 'leave' || card.id === 'late'
+            ? 'leave'
+            : card.id === 'scholarship' ? 'scholarship' : 'salary';
+          const CardComponent = card.mock ? View : Pressable;
+          return (
+          <CardComponent
+            key={card.id}
+            style={styles.statCard}
+            {...(!card.mock ? {
+              onPress: () => onNavigateTab?.(targetTab),
+              accessibilityRole: 'button',
+              accessibilityLabel: `${card.label}: ${card.count}. Open approvals`,
+            } : {})}
+          >
+            <View style={styles.statCardTop}>
+              <Ionicons name={card.icon} size={20} color={card.color} />
+              {!card.mock ? <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} /> : null}
+            </View>
             <AppText variant="title" style={styles.statValue}>
               {loading ? '—' : card.count}
             </AppText>
             <AppText variant="caption" color={colors.textSecondary} style={styles.statLabel}>
               {card.label}
             </AppText>
-          </View>
-        ))}
+          </CardComponent>
+          );
+        })}
       </View>
+
+      <Pressable style={styles.todayLateCard} onPress={() => setShowTodayLate(true)} accessibilityRole="button">
+        <View style={[styles.lateIconWrap, { backgroundColor: colors.errorBg }]}>
+          <Ionicons name="time-outline" size={22} color={colors.errorText} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <AppText variant="subtitle" style={{ fontWeight: '700' }}>Today&apos;s late</AppText>
+          <AppText variant="caption" color={colors.textSecondary}>Staff and teachers marked late today</AppText>
+        </View>
+        <AppText variant="heading" style={{ color: colors.errorText }}>{loading ? '—' : todayLate.length}</AppText>
+        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+      </Pressable>
     </ScrollView>
   );
 }
@@ -272,5 +322,17 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   statValue: { color: colors.textPrimary, fontWeight: '700' },
+  statCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statLabel: { fontSize: 12 },
+  todayLateCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    ...shadows.card,
+  },
+  lateIconWrap: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });

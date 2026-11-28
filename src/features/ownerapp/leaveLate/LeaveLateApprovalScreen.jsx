@@ -27,6 +27,20 @@ function formatDay(iso) {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function formatTime(value) {
+  if (!value) return '—';
+  const [rawHour, rawMinute] = String(value).split(':');
+  const hour = Number(rawHour);
+  const minute = Number(rawMinute);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return String(value);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${period}`;
+}
+
+function latePersonType(late) {
+  return String(late.employeeType || '').toUpperCase() === 'TEACHER' ? 'Teacher' : 'Staff';
+}
+
 function buildRows(leaves, lates) {
   const rows = [];
   (leaves || []).forEach((req) => {
@@ -57,68 +71,102 @@ function buildRows(leaves, lates) {
     });
   });
   (lates || []).forEach((late) => {
+    const personType = latePersonType(late);
     rows.push({
       id: `late-${late.id}`,
       kind: 'late',
       icon: 'time',
-      title: `${late.staffName || 'Staff'} · Late reason`,
-      detailTitle: 'Late reason',
-      subtitle: formatDay(late.attendanceDate),
+      title: `${late.staffName || personType} · ${personType} late request`,
+      detailTitle: `${personType} late request`,
+      subtitle: `${formatDay(late.attendanceDate)} · ${formatTime(late.entryTime)}`,
       reason: late.reason || '',
       decisionNote: late.decisionRemarks || '',
       status: String(late.status || 'PENDING').toUpperCase(),
       dateValue: late.attendanceDate,
       sourceId: late.id,
-      staffInfo: { name: late.staffName, code: late.employeeCode, designation: late.designation },
+      staffInfo: { name: late.staffName, code: late.employeeCode, designation: late.designation, employeeType: personType },
       statCards: [
         { label: 'Late approved this month', value: late.approvedThisMonthCount ?? 0 },
         { label: 'Pending late requests', value: late.pendingCount ?? 0 },
       ],
       fields: [
         { label: 'Date', value: formatDay(late.attendanceDate) },
+        { label: 'Entry time', value: formatTime(late.entryTime) },
       ],
     });
   });
-  rows.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+  rows.sort((a, b) => {
+    const aPending = String(a.status || '').toUpperCase() === 'PENDING';
+    const bPending = String(b.status || '').toUpperCase() === 'PENDING';
+    if (aPending !== bPending) return aPending ? -1 : 1;
+    const dateOrder = String(b.dateValue || '').localeCompare(String(a.dateValue || ''));
+    if (dateOrder !== 0) return dateOrder;
+    return String(b.id).localeCompare(String(a.id));
+  });
   return rows;
 }
 
 /** Owner screen — tap a Leave/Late request to see full details and Accept or Reject it. */
-export default function LeaveLateApprovalScreen({ ownerToken, ownerName }) {
+export default function LeaveLateApprovalScreen({ ownerToken, ownerName, pushTarget, onPushTargetHandled }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [lateLoadError, setLateLoadError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState({ from: null, to: null });
-  const load = useCallback(async () => {
+  // Why: `silent` is used for the background refresh right after Approve/Reject — it must
+  // update `rows` without flashing the full-screen spinner over the list (that spinner is
+  // only for the initial load / explicit pull-to-refresh).
+  const load = useCallback(async ({ silent = false } = {}) => {
     if (!ownerToken) {
       setRows([]);
       setLoading(false);
       return [];
     }
-    setLoading(true);
-    setError('');
+    if (!silent) setLoading(true);
+    if (!silent) setError('');
     try {
-      const [leaves, lates] = await Promise.all([
-        fetchOwnerLeaveRequests(ownerToken).catch(() => []),
-        fetchOwnerLateRequests(ownerToken).catch(() => []),
+      const [leaveResult, lateResult] = await Promise.allSettled([
+        fetchOwnerLeaveRequests(ownerToken),
+        fetchOwnerLateRequests(ownerToken),
       ]);
+      const leaves = leaveResult.status === 'fulfilled' ? leaveResult.value : [];
+      const lates = lateResult.status === 'fulfilled' ? lateResult.value : [];
+      setLateLoadError(
+        lateResult.status === 'rejected'
+          ? lateResult.reason?.message || 'Could not load late requests'
+          : '',
+      );
       const refreshedRows = buildRows(leaves, lates);
       setRows(refreshedRows);
       return refreshedRows;
     } catch (e) {
-      setError(e.message || 'Could not load requests');
+      if (!silent) setError(e.message || 'Could not load requests');
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [ownerToken]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (loading || !pushTarget || pushTarget.tab !== 'leave') return;
+    const prefix = pushTarget.entityType === 'LEAVE_REQUEST' ? 'leave-' : 'late-';
+    const match = rows.find((row) => row.id === `${prefix}${pushTarget.requestId}`);
+    if (match) {
+      setStatusFilter('all');
+      setDateFilter({ from: null, to: null });
+      setSelectedId(match.id);
+      setError('');
+      setDecidedOverride(null);
+    }
+    onPushTargetHandled?.();
+  }, [loading, rows, pushTarget, onPushTargetHandled]);
 
   const selected = useMemo(() => rows.find((r) => r.id === selectedId) || null, [rows, selectedId]);
 
@@ -134,8 +182,11 @@ export default function LeaveLateApprovalScreen({ ownerToken, ownerName }) {
 
   const act = useCallback(
     async (row, action, remarks) => {
+      // Why: a fast double-tap on Approve/Reject must not fire the request twice
+      if (busy) return;
       setBusy(true);
       setError('');
+      const finalStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
       try {
         if (row.kind === 'leave') {
           if (action === 'approve') await approveOwnerLeaveRequest(ownerToken, row.sourceId, remarks);
@@ -145,21 +196,32 @@ export default function LeaveLateApprovalScreen({ ownerToken, ownerName }) {
         } else {
           await rejectOwnerLateRequest(ownerToken, row.sourceId, remarks);
         }
-        const finalStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
-        const refreshedRows = await load();
-        const refreshedRequest = refreshedRows?.find((item) => item.id === row.id);
+        // Why: reflect the new status immediately — don't make the user wait for the
+        // background refetch round-trip just to see the button state change.
         setDecidedOverride({
-          ...(refreshedRequest || row),
-          status: refreshedRequest?.status || finalStatus,
-          decisionNote: refreshedRequest?.decisionNote || '',
+          ...row,
+          status: finalStatus,
+          decisionNote: action === 'reject' ? remarks : row.decisionNote,
         });
+        const refreshedRows = await load({ silent: true });
+        const refreshedRequest = refreshedRows?.find((item) => item.id === row.id);
+        if (refreshedRequest) {
+          // Why: the action we just performed is authoritative — never let a possibly-stale
+          // refetch (e.g. server-side read timing) downgrade the status back to PENDING.
+          // Only pull supplementary fields (like the decision note) from the fresh data.
+          setDecidedOverride({
+            ...refreshedRequest,
+            status: finalStatus,
+            decisionNote: refreshedRequest.decisionNote || (action === 'reject' ? remarks : row.decisionNote) || '',
+          });
+        }
       } catch (e) {
         setError(e.message || 'Could not update request');
       } finally {
         setBusy(false);
       }
     },
-    [ownerToken, load],
+    [ownerToken, load, busy],
   );
 
   const displayed = decidedOverride?.id === selectedId ? decidedOverride : selected;
@@ -199,6 +261,14 @@ export default function LeaveLateApprovalScreen({ ownerToken, ownerName }) {
         <CalendarDatePicker value={dateFilter} onChange={setDateFilter} />
         <StatusDropdown value={statusFilter} onChange={setStatusFilter} />
       </View>
+
+      {lateLoadError ? (
+        <View style={styles.lateLoadError}>
+          <AppText variant="body" color={colors.errorText}>
+            Late requests could not be loaded: {lateLoadError}. Pull down to retry.
+          </AppText>
+        </View>
+      ) : null}
 
       {loading ? (
         <View style={styles.center}>
@@ -253,6 +323,7 @@ export default function LeaveLateApprovalScreen({ ownerToken, ownerName }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
   filterRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, marginTop: spacing.md },
+  lateLoadError: { marginHorizontal: spacing.md, padding: spacing.md, borderRadius: 12, backgroundColor: colors.errorBg },
   list: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyWrap: { flexGrow: 1 },

@@ -57,7 +57,7 @@ function buildRows(requests) {
 }
 
 /** Owner screen — tap a scholarship / fee-discount request to see details and decide. */
-export default function ScholarshipApprovalScreen({ ownerToken, ownerName }) {
+export default function ScholarshipApprovalScreen({ ownerToken, ownerName, pushTarget, onPushTargetHandled }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -66,30 +66,45 @@ export default function ScholarshipApprovalScreen({ ownerToken, ownerName }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState({ from: null, to: null });
 
-  const load = useCallback(async () => {
+  // Why: `silent` is used for the background refresh right after Approve/Reject — it must
+  // update `rows` without flashing the full-screen spinner over the list.
+  const load = useCallback(async ({ silent = false } = {}) => {
     if (!ownerToken) {
       setRows([]);
       setLoading(false);
       return [];
     }
-    setLoading(true);
-    setError('');
+    if (!silent) setLoading(true);
+    if (!silent) setError('');
     try {
       const requests = await fetchOwnerScholarshipRequests(ownerToken).catch(() => []);
       const refreshedRows = buildRows(requests);
       setRows(refreshedRows);
       return refreshedRows;
     } catch (e) {
-      setError(e.message || 'Could not load requests');
+      if (!silent) setError(e.message || 'Could not load requests');
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [ownerToken]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (loading || !pushTarget || pushTarget.tab !== 'scholarship') return;
+    const match = rows.find((row) => row.id === `scholarship-${pushTarget.requestId}`);
+    if (match) {
+      setStatusFilter('all');
+      setDateFilter({ from: null, to: null });
+      setSelectedId(match.id);
+      setError('');
+      setDecidedOverride(null);
+    }
+    onPushTargetHandled?.();
+  }, [loading, rows, pushTarget, onPushTargetHandled]);
 
   const selected = useMemo(() => rows.find((r) => r.id === selectedId) || null, [rows, selectedId]);
 
@@ -105,26 +120,40 @@ export default function ScholarshipApprovalScreen({ ownerToken, ownerName }) {
 
   const act = useCallback(
     async (row, action, remarks) => {
+      // Why: a fast double-tap on Approve/Reject must not fire the request twice
+      if (busy) return;
       setBusy(true);
       setError('');
+      const finalStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
       try {
         if (action === 'approve') await approveOwnerScholarshipRequest(ownerToken, row.sourceId);
         else await rejectOwnerScholarshipRequest(ownerToken, row.sourceId, remarks);
-        const finalStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
-        const refreshedRows = await load();
-        const refreshedRequest = refreshedRows?.find((item) => item.id === row.id);
+        // Why: reflect the new status immediately — don't make the user wait for the
+        // background refetch round-trip just to see the button state change.
         setDecidedOverride({
-          ...(refreshedRequest || row),
-          status: refreshedRequest?.status || finalStatus,
-          decisionNote: refreshedRequest?.decisionNote || '',
+          ...row,
+          status: finalStatus,
+          decisionNote: action === 'reject' ? remarks : row.decisionNote,
         });
+        const refreshedRows = await load({ silent: true });
+        const refreshedRequest = refreshedRows?.find((item) => item.id === row.id);
+        if (refreshedRequest) {
+          // Why: the action we just performed is authoritative — never let a possibly-stale
+          // refetch downgrade the status back to PENDING. Only pull supplementary fields
+          // (like the decision note) from the fresh data.
+          setDecidedOverride({
+            ...refreshedRequest,
+            status: finalStatus,
+            decisionNote: refreshedRequest.decisionNote || (action === 'reject' ? remarks : row.decisionNote) || '',
+          });
+        }
       } catch (e) {
         setError(e.message || 'Could not update request');
       } finally {
         setBusy(false);
       }
     },
-    [ownerToken, load],
+    [ownerToken, load, busy],
   );
 
   if (displayed) {

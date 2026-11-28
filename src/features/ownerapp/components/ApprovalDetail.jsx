@@ -19,7 +19,7 @@ function titleCase(text) {
   return text.charAt(0) + text.slice(1).toLowerCase();
 }
 
-function RemarksModal({ visible, minLength = 1, onCancel, onConfirm }) {
+function RemarksModal({ visible, minLength = 1, busy = false, onCancel, onConfirm }) {
   const [remarks, setRemarks] = useState('');
   const trimmedLength = remarks.trim().length;
   const tooShort = trimmedLength < minLength;
@@ -51,11 +51,11 @@ function RemarksModal({ visible, minLength = 1, onCancel, onConfirm }) {
             </AppText>
           ) : null}
           <View style={styles.modalRow}>
-            <AppButton title="Cancel" variant="outline" onPress={onCancel} style={{ flex: 1 }} />
+            <AppButton title="Cancel" variant="outline" disabled={busy} onPress={onCancel} style={{ flex: 1 }} />
             <AppButton
               title="Confirm reject"
               variant="danger"
-              disabled={tooShort}
+              disabled={tooShort || busy}
               onPress={() => onConfirm(remarks.trim())}
               style={{ flex: 1 }}
             />
@@ -125,7 +125,7 @@ export default function ApprovalDetail({
           <View style={{ flex: 1 }}>
             <AppText variant="subtitle" style={{ fontWeight: '700' }}>{staffInfo.name}</AppText>
             <AppText variant="caption" color={colors.textSecondary}>
-              {[staffInfo.code, staffInfo.designation].filter(Boolean).join(' · ')}
+              {[staffInfo.code, staffInfo.designation, staffInfo.employeeType].filter(Boolean).join(' · ')}
             </AppText>
           </View>
         </View>
@@ -173,6 +173,14 @@ export default function ApprovalDetail({
           </View>
         ) : null}
 
+        {statusKey === 'REJECTED' && decisionNote ? (
+          <View style={[styles.reasonBox, { backgroundColor: tone.bg }]}>
+            <AppText variant="caption" style={{ color: tone.text, fontWeight: '700' }}>
+              {statusKey === 'REJECTED' ? 'Rejected reason' : `${tone.label} note`}
+            </AppText>
+            <AppText variant="body" style={{ marginTop: 4, color: colors.textPrimary }}>{decisionNote}</AppText>
+          </View>
+        ) : null}
       </View>
 
       {children}
@@ -210,6 +218,7 @@ export default function ApprovalDetail({
       <RemarksModal
         visible={rejectVisible}
         minLength={rejectMinLength}
+        busy={busy}
         onCancel={() => setRejectVisible(false)}
         onConfirm={(remarks) => {
           setRejectVisible(false);

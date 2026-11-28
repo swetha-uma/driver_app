@@ -78,7 +78,7 @@ function buildRows(advances, structures) {
 }
 
 /** Owner screen — Salary (a staff/teacher's salary set or updated) and Salary Advance approvals. */
-export default function SalaryAdvanceApprovalScreen({ ownerToken, ownerName }) {
+export default function SalaryAdvanceApprovalScreen({ ownerToken, ownerName, pushTarget, onPushTargetHandled }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -89,14 +89,16 @@ export default function SalaryAdvanceApprovalScreen({ ownerToken, ownerName }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState({ from: null, to: null });
 
-  const load = useCallback(async () => {
+  // Why: `silent` is used for the background refresh right after Approve/Reject — it must
+  // update `rows` without flashing the full-screen spinner over the list.
+  const load = useCallback(async ({ silent = false } = {}) => {
     if (!ownerToken) {
       setRows([]);
       setLoading(false);
       return [];
     }
-    setLoading(true);
-    setError('');
+    if (!silent) setLoading(true);
+    if (!silent) setError('');
     try {
       const [advances, structures] = await Promise.all([
         fetchOwnerAdvanceRequests(ownerToken).catch(() => []),
@@ -106,16 +108,30 @@ export default function SalaryAdvanceApprovalScreen({ ownerToken, ownerName }) {
       setRows(refreshedRows);
       return refreshedRows;
     } catch (e) {
-      setError(e.message || 'Could not load requests');
+      if (!silent) setError(e.message || 'Could not load requests');
       return null;
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [ownerToken]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (loading || !pushTarget || pushTarget.tab !== 'salary') return;
+    const prefix = pushTarget.entityType === 'SALARY_ADVANCE' ? 'advance-' : 'salary-';
+    const match = rows.find((row) => row.id === `${prefix}${pushTarget.requestId}`);
+    if (match) {
+      setStatusFilter('all');
+      setDateFilter({ from: null, to: null });
+      setSelectedId(match.id);
+      setError('');
+      setDecidedOverride(null);
+    }
+    onPushTargetHandled?.();
+  }, [loading, rows, pushTarget, onPushTargetHandled]);
 
   const selected = useMemo(() => rows.find((r) => r.id === selectedId) || null, [rows, selectedId]);
 
@@ -154,8 +170,11 @@ export default function SalaryAdvanceApprovalScreen({ ownerToken, ownerName }) {
 
   const act = useCallback(
     async (row, action, remarks) => {
+      // Why: a fast double-tap on Approve/Reject must not fire the request twice
+      if (busy) return;
       setBusy(true);
       setError('');
+      const finalStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
       try {
         if (row.kind === 'advance' && action === 'approve') {
           await approveOwnerAdvanceRequest(ownerToken, row.sourceId);
@@ -163,26 +182,35 @@ export default function SalaryAdvanceApprovalScreen({ ownerToken, ownerName }) {
           if (action === 'approve') await approveOwnerSalaryStructure(ownerToken, row.sourceId);
           else await rejectOwnerSalaryStructure(ownerToken, row.sourceId, remarks);
         }
-        const finalStatus = action === 'approve' ? 'APPROVED' : 'REJECTED';
-        const refreshedRows = await load();
+        // Why: reflect the new status immediately — don't make the user wait for the
+        // background refetch round-trip just to see the button state change.
+        const typedNote = action === 'reject' ? remarks : row.decisionNote;
+        setDecidedOverride({ ...row, status: finalStatus, decisionNote: typedNote });
+        const refreshedRows = await load({ silent: true });
         const refreshedRequest = refreshedRows?.find((item) => item.id === row.id);
-        setDecidedOverride({
-          ...(refreshedRequest || row),
-          status: refreshedRequest?.status || finalStatus,
-        });
+        if (refreshedRequest) {
+          // Why: the action we just performed is authoritative — never let a possibly-stale
+          // refetch downgrade the status back to PENDING (and for 'salary' rows, the pending-only
+          // list endpoint simply won't include this row anymore, so refreshedRequest stays unset —
+          // the optimistic update above is what keeps the final state visible in that case).
+          setDecidedOverride({
+            ...refreshedRequest,
+            status: finalStatus,
+            decisionNote: refreshedRequest.decisionNote || typedNote,
+          });
+        }
       } catch (e) {
         setError(e.message || 'Could not update request');
       } finally {
         setBusy(false);
       }
     },
-    [ownerToken, load],
+    [ownerToken, load, busy],
   );
 
   if (displayed) {
-    const decisionNote = displayed.kind === 'salary' && displayed.status === 'REJECTED'
-      ? structureDetail?.remarks
-      : undefined;
+    const decisionNote = displayed.decisionNote
+      || (displayed.kind === 'salary' && displayed.status === 'REJECTED' ? structureDetail?.remarks : undefined);
     return (
       <ApprovalDetail
         icon={displayed.icon}
